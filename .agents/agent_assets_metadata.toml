@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "ZSAgd-SpeHv5gwKrYPnDC"
+uri = "file://artifacts/mobile/assets/images/icon.png"
+type = "image"
+title = "roadsosai app icon shield"

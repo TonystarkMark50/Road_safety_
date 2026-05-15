@@ -1,0 +1,355 @@
+Create a modern, scalable, AI-powered civic safety platform called **RoadSoS AI** — a smart road safety, emergency response, and infrastructure transparency ecosystem for citizens, emergency responders, and government authorities.
+
+The platform should have a clean, futuristic UI with responsive dashboards for mobile and web. Build it as a production-ready application with modular architecture, authentication, real-time location services, AI integrations, and analytics.
+
+Core idea: citizens can report road issues, accidents, and emergencies with photos/videos and GPS location, while authorities receive intelligent routing, analytics, and transparency dashboards.
+
+Main modules and features to implement:
+
+---
+
+## 1. Authentication & User Management
+
+Create a secure authentication system with:
+
+* Google Sign-In
+* Email & Password Login
+* Mobile OTP Login
+* Role-Based Authentication:
+
+  * Citizen
+  * Admin
+  * Government Authority
+  * Emergency Services
+
+Include:
+
+* JWT/session management
+* User profile management
+* Aadhaar verification flow for trusted users
+* Verified badge system
+* Secure encrypted storage
+
+---
+
+## 2. Smart Complaint Reporting System
+
+Allow users to report:
+
+* Potholes
+* Road damage
+* Accidents
+* Water logging
+* Signal failures
+* Illegal parking
+* Traffic congestion
+
+Features:
+
+* Upload images/videos
+* Voice complaint support
+* GPS auto-detection
+* Google Maps integration
+* Live location sharing
+* Interactive road marking
+
+Implement a ticketing workflow similar to Uber/Zomato support:
+
+* Auto-generated Ticket ID
+* Status flow:
+
+  * Submitted
+  * Under Review
+  * Assigned
+  * In Progress
+  * Resolved
+* Real-time notifications
+* Complaint timeline tracking
+
+---
+
+## 3. Road Transparency Dashboard
+
+For each road segment display:
+
+* Road type:
+
+  * NH
+  * SH
+  * MDR
+  * Rural Road
+* Last maintenance date
+* Contractor details
+* Tender details
+* Department responsible
+* Road quality score
+* Estimated road lifespan
+
+Visualize all information on maps and dashboards.
+
+---
+
+## 4. Smart Authority Routing & Escalation
+
+Build AI-based complaint routing logic.
+
+The system should automatically identify:
+
+* Road ownership
+* Complaint category
+* Geographic jurisdiction
+* Responsible department
+
+Automatically forward complaints to:
+
+* Executive Engineers
+* Highway Departments
+* Municipal Authorities
+* Traffic Police
+
+Add escalation logic:
+
+* Auto reminders
+* Escalation to higher authorities
+* Public visibility score if delayed
+
+---
+
+## 5. Budget & Public Transparency System
+
+Create analytics dashboards showing:
+
+* Sanctioned budget
+* Amount spent
+* Remaining funds
+* Contractor payment status
+* Repair estimates
+* Project timelines
+
+Include:
+
+* Complaint analytics
+* Resolution rate
+* Accident heatmaps
+* Area-wise issue reports
+* Authority performance metrics
+
+---
+
+## 6. Emergency Assistance System
+
+Build a one-tap SOS system with:
+
+* Nearby trauma centres
+* Ambulance services
+* Vehicle rescue services
+* Police stations
+* Emergency contacts
+
+Features:
+
+* Emergency alert button
+* Live location sharing
+* Ambulance route navigation
+* Instant calling integration
+
+---
+
+## 7. AI Chatbot Assistant
+
+Create an AI assistant that can:
+
+* Help users file complaints
+* Track complaint status
+* Provide emergency guidance
+* Offer road safety instructions
+* Support voice interaction
+* Support multiple languages
+
+AI features:
+
+* Smart FAQs
+* Context-aware responses
+* Emergency recommendations
+
+---
+
+## 8. CCTV & Traffic Analytics
+
+Integrate public CCTV/traffic camera support.
+
+Use AI/computer vision for:
+
+* Vehicle counting
+* Traffic density analysis
+* Peak-hour analytics
+* Accident detection
+* Congestion detection
+* Unsafe driving detection
+
+Use:
+
+* OpenCV
+* YOLO
+* TensorFlow
+
+---
+
+## 9. Offline & Low-Network Support
+
+Implement:
+
+* Offline complaint saving
+* Offline GPS storage
+* Auto sync when internet returns
+* SMS-based emergency alerts
+* Compressed media uploads
+* Cached maps
+* Progressive loading
+
+Optimize for:
+
+* Rural areas
+* Highways
+* Low-network regions
+* Disaster situations
+
+---
+
+## 10. Multi-Country Scalability
+
+Design the platform to support:
+
+* Multiple countries
+* Multi-language UI
+* Different government systems
+* Different road classifications
+* Local emergency numbers
+* Regional currencies
+* Country-specific standards
+
+---
+
+## 11. Dashboard UI Requirements
+
+Citizen Dashboard:
+
+* Complaint history
+* Nearby emergency services
+* Live traffic alerts
+* Road condition maps
+
+Admin Dashboard:
+
+* Complaint analytics
+* Heatmaps
+* Live monitoring
+* Authority management
+
+Government Dashboard:
+
+* Budget tracking
+* Road maintenance planning
+* Infrastructure analytics
+* Performance reports
+
+Use modern glassmorphism/neumorphism UI with:
+
+* Dark mode
+* Interactive charts
+* Animated transitions
+* Responsive layouts
+* Real-time updates
+
+---
+
+## 12. Future AI Features
+
+Design architecture for future integration of:
+
+* AI accident prediction
+* Predictive maintenance
+* Smart emergency dispatch
+* AI traffic forecasting
+* Automated road damage detection
+
+---
+
+## Suggested Tech Stack
+
+Frontend:
+
+* Flutter
+* React.js
+* Tailwind CSS
+
+Backend:
+
+* Node.js
+* Express.js
+* Firebase
+
+Database:
+
+* MongoDB
+* PostgreSQL
+* Firebase Firestore
+
+APIs:
+
+* Google Maps API
+* Firebase Auth
+* Twilio OTP API
+* Aadhaar Verification API
+
+AI/ML:
+
+* OpenCV
+* TensorFlow
+* YOLO
+* Gemini/OpenAI APIs
+
+---
+
+## Architecture Modules
+
+Build modular architecture with:
+
+1. Authentication Module
+2. Aadhaar Verification Module
+3. Complaint Management Module
+4. GIS & Mapping Module
+5. Emergency Response Module
+6. AI Chatbot Module
+7. CCTV Analytics Module
+8. Transparency Dashboard Module
+9. Budget Monitoring Module
+10. Notification Engine
+11. Offline Sync Engine
+12. AI Prediction Engine
+
+---
+
+## UI/UX Expectations
+
+* Modern futuristic civic-tech design
+* Mobile-first responsive UI
+* Professional government dashboard aesthetic
+* Real-time maps and analytics
+* Smooth animations
+* Clean typography
+* Accessibility support
+
+---
+
+## Final Goal
+
+RoadSoS AI should function as:
+
+* A smart civic infrastructure platform
+* An AI-powered road safety ecosystem
+* A public transparency system
+* An emergency response network
+* A scalable smart-city solution
+
+Focus on production-ready code structure, scalability, security, modularity, and clean UI/UX. 

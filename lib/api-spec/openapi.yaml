@@ -1,22 +1,35 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: RoadSoS AI API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: reports
+    description: Complaint/report operations
+  - name: emergency
+    description: Emergency services
+  - name: dashboard
+    description: Dashboard and analytics
+  - name: roads
+    description: Road transparency data
+  - name: budget
+    description: Budget and transparency
+  - name: notifications
+    description: Notifications
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +37,429 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # AUTH
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  # REPORTS / COMPLAINTS
+  /reports:
+    get:
+      operationId: listReports
+      tags: [reports]
+      summary: List reports
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [submitted, under_review, assigned, in_progress, resolved, all]
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of reports
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportListResponse"
+
+    post:
+      operationId: createReport
+      tags: [reports]
+      summary: Create a new report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Report"
+
+  /reports/{id}:
+    get:
+      operationId: getReport
+      tags: [reports]
+      summary: Get a report by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Report"
+        "404":
+          description: Not found
+
+    patch:
+      operationId: updateReport
+      tags: [reports]
+      summary: Update report status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Report"
+
+  /reports/{id}/upvote:
+    post:
+      operationId: upvoteReport
+      tags: [reports]
+      summary: Upvote a report
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Upvoted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Report"
+
+  /reports/my:
+    get:
+      operationId: getMyReports
+      tags: [reports]
+      summary: Get current user's reports
+      responses:
+        "200":
+          description: My reports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Report"
+
+  # EMERGENCY SERVICES
+  /emergency/services:
+    get:
+      operationId: listEmergencyServices
+      tags: [emergency]
+      summary: List nearby emergency services
+      parameters:
+        - name: lat
+          in: query
+          schema:
+            type: number
+        - name: lng
+          in: query
+          schema:
+            type: number
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [hospital, police, fire, ambulance, all]
+      responses:
+        "200":
+          description: Emergency services
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EmergencyService"
+
+  /emergency/sos:
+    post:
+      operationId: triggerSOS
+      tags: [emergency]
+      summary: Trigger SOS alert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SOSInput"
+      responses:
+        "201":
+          description: SOS triggered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SOSResponse"
+
+  # DASHBOARD / ANALYTICS
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard summary stats
+      responses:
+        "200":
+          description: Summary statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/heatmap:
+    get:
+      operationId: getHeatmapData
+      tags: [dashboard]
+      summary: Get accident/issue heatmap data
+      responses:
+        "200":
+          description: Heatmap points
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HeatmapPoint"
+
+  /dashboard/recent-activity:
+    get:
+      operationId: getRecentActivity
+      tags: [dashboard]
+      summary: Get recent platform activity
+      responses:
+        "200":
+          description: Recent activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
+  /dashboard/category-breakdown:
+    get:
+      operationId: getCategoryBreakdown
+      tags: [dashboard]
+      summary: Get reports grouped by category
+      responses:
+        "200":
+          description: Category breakdown
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategoryStat"
+
+  /dashboard/resolution-trends:
+    get:
+      operationId: getResolutionTrends
+      tags: [dashboard]
+      summary: Get resolution rate trends over time
+      responses:
+        "200":
+          description: Resolution trends
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrendPoint"
+
+  # ROAD TRANSPARENCY
+  /roads:
+    get:
+      operationId: listRoads
+      tags: [roads]
+      summary: List road segments
+      responses:
+        "200":
+          description: Road segments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RoadSegment"
+
+  /roads/{id}:
+    get:
+      operationId: getRoad
+      tags: [roads]
+      summary: Get road segment details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Road segment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoadSegment"
+
+  # BUDGET TRANSPARENCY
+  /budget/overview:
+    get:
+      operationId: getBudgetOverview
+      tags: [budget]
+      summary: Get budget overview
+      responses:
+        "200":
+          description: Budget overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BudgetOverview"
+
+  /budget/projects:
+    get:
+      operationId: listBudgetProjects
+      tags: [budget]
+      summary: List budget projects
+      responses:
+        "200":
+          description: Budget projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BudgetProject"
+
+  # NOTIFICATIONS
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: List user notifications
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+  /notifications/{id}/read:
+    patch:
+      operationId: markNotificationRead
+      tags: [notifications]
+      summary: Mark notification as read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Marked as read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +467,401 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+
+    # AUTH SCHEMAS
+    RegisterInput:
+      type: object
+      required: [name, email, password, role]
+      properties:
+        name:
+          type: string
+          minLength: 2
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+        phone:
+          type: ["string", "null"]
+        role:
+          type: string
+          enum: [citizen, admin, authority, emergency]
+
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [user, token]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        token:
+          type: string
+
+    User:
+      type: object
+      required: [id, name, email, role, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: ["string", "null"]
+        role:
+          type: string
+          enum: [citizen, admin, authority, emergency]
+        isVerified:
+          type: boolean
+        reportsCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    # REPORT SCHEMAS
+    ReportInput:
+      type: object
+      required: [title, category, description, latitude, longitude, address]
+      properties:
+        title:
+          type: string
+          minLength: 5
+        category:
+          type: string
+          enum: [pothole, road_damage, accident, waterlogging, signal_failure, illegal_parking, congestion, other]
+        description:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        address:
+          type: string
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        imageUrl:
+          type: ["string", "null"]
+
+    ReportUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [submitted, under_review, assigned, in_progress, resolved]
+        assignedTo:
+          type: ["string", "null"]
+        adminNote:
+          type: ["string", "null"]
+
+    Report:
+      type: object
+      required: [id, ticketId, title, category, description, status, latitude, longitude, address, severity, upvotes, createdAt]
+      properties:
+        id:
+          type: integer
+        ticketId:
+          type: string
+        title:
+          type: string
+        category:
+          type: string
+          enum: [pothole, road_damage, accident, waterlogging, signal_failure, illegal_parking, congestion, other]
+        description:
+          type: string
+        status:
+          type: string
+          enum: [submitted, under_review, assigned, in_progress, resolved]
+        latitude:
+          type: number
+        longitude:
+          type: number
+        address:
+          type: string
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        upvotes:
+          type: integer
+        imageUrl:
+          type: ["string", "null"]
+        assignedTo:
+          type: ["string", "null"]
+        adminNote:
+          type: ["string", "null"]
+        userId:
+          type: ["integer", "null"]
+        userName:
+          type: ["string", "null"]
+        resolvedAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ReportListResponse:
+      type: object
+      required: [reports, total, page, limit]
+      properties:
+        reports:
+          type: array
+          items:
+            $ref: "#/components/schemas/Report"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    # EMERGENCY SCHEMAS
+    SOSInput:
+      type: object
+      required: [latitude, longitude]
+      properties:
+        latitude:
+          type: number
+        longitude:
+          type: number
+        description:
+          type: ["string", "null"]
+        contactName:
+          type: ["string", "null"]
+        contactPhone:
+          type: ["string", "null"]
+
+    SOSResponse:
+      type: object
+      required: [id, status, nearbyServices]
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+        nearbyServices:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmergencyService"
+        message:
+          type: string
+
+    EmergencyService:
+      type: object
+      required: [id, name, type, phone, latitude, longitude, address]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        type:
+          type: string
+          enum: [hospital, police, fire, ambulance]
+        phone:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        address:
+          type: string
+        distanceKm:
+          type: ["number", "null"]
+        isAvailable:
+          type: boolean
+
+    # DASHBOARD SCHEMAS
+    DashboardSummary:
+      type: object
+      required: [totalReports, resolvedReports, pendingReports, activeEmergencies, resolutionRate, avgResolutionHours]
+      properties:
+        totalReports:
+          type: integer
+        resolvedReports:
+          type: integer
+        pendingReports:
+          type: integer
+        inProgressReports:
+          type: integer
+        activeEmergencies:
+          type: integer
+        resolutionRate:
+          type: number
+        avgResolutionHours:
+          type: number
+        topCategory:
+          type: string
+        totalCitizens:
+          type: integer
+
+    HeatmapPoint:
+      type: object
+      required: [latitude, longitude, intensity, category]
+      properties:
+        latitude:
+          type: number
+        longitude:
+          type: number
+        intensity:
+          type: number
+        category:
+          type: string
+
+    ActivityItem:
+      type: object
+      required: [id, type, message, createdAt]
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [report_created, report_resolved, sos_triggered, report_upvoted]
+        message:
+          type: string
+        userName:
+          type: ["string", "null"]
+        reportId:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    CategoryStat:
+      type: object
+      required: [category, count, percentage]
+      properties:
+        category:
+          type: string
+        count:
+          type: integer
+        percentage:
+          type: number
+
+    TrendPoint:
+      type: object
+      required: [date, reported, resolved]
+      properties:
+        date:
+          type: string
+        reported:
+          type: integer
+        resolved:
+          type: integer
+
+    # ROAD SCHEMAS
+    RoadSegment:
+      type: object
+      required: [id, name, type, qualityScore, lastMaintained, department, contractorName]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        type:
+          type: string
+          enum: [NH, SH, MDR, rural]
+        qualityScore:
+          type: integer
+        lastMaintained:
+          type: string
+          format: date
+        department:
+          type: string
+        contractorName:
+          type: string
+        tenderValue:
+          type: ["number", "null"]
+        estimatedLifespanYears:
+          type: integer
+        latitude:
+          type: ["number", "null"]
+        longitude:
+          type: ["number", "null"]
+
+    # BUDGET SCHEMAS
+    BudgetOverview:
+      type: object
+      required: [totalSanctioned, totalSpent, totalRemaining, projectCount, completedProjects]
+      properties:
+        totalSanctioned:
+          type: number
+        totalSpent:
+          type: number
+        totalRemaining:
+          type: number
+        projectCount:
+          type: integer
+        completedProjects:
+          type: integer
+        utilizationRate:
+          type: number
+
+    BudgetProject:
+      type: object
+      required: [id, name, department, sanctionedAmount, spentAmount, status, startDate, endDate]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        department:
+          type: string
+        contractorName:
+          type: string
+        sanctionedAmount:
+          type: number
+        spentAmount:
+          type: number
+        status:
+          type: string
+          enum: [planned, in_progress, completed, delayed]
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+
+    # NOTIFICATION SCHEMAS
+    Notification:
+      type: object
+      required: [id, title, message, type, isRead, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        message:
+          type: string
+        type:
+          type: string
+          enum: [report_update, sos_alert, system, announcement]
+        isRead:
+          type: boolean
+        reportId:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+          format: date-time
