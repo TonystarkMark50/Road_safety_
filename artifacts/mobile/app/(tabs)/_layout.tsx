@@ -10,6 +10,7 @@ import React, { useEffect } from "react";
 import { Platform, StyleSheet, View, useColorScheme } from "react-native";
 
 import { useColors } from "@/hooks/useColors";
+import ChatBot from "@/components/ChatBot";
 
 function NativeTabLayout() {
   return (
@@ -155,8 +156,12 @@ export default function TabLayout() {
   if (!isLoaded) return null;
   if (!isSignedIn) return <Redirect href="/login" />;
 
-  if (isLiquidGlassAvailable()) {
-    return <NativeTabLayout />;
-  }
-  return <ClassicTabLayout />;
+  const tabContent = isLiquidGlassAvailable() ? <NativeTabLayout /> : <ClassicTabLayout />;
+
+  return (
+    <View style={{ flex: 1 }}>
+      {tabContent}
+      <ChatBot />
+    </View>
+  );
 }
