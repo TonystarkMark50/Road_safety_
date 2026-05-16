@@ -1,18 +1,19 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { setAuthTokenGetter } from "@workspace/api-client-react";
-import { useGetMe } from "@workspace/api-client-react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { useAuth as useClerkAuth, useUser, useClerk } from "@clerk/react";
+
+interface LocalUser {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  role: string;
+  isVerified: boolean;
+  reportsCount: number;
+  createdAt: string;
+}
 
 interface AuthContextValue {
-  user: {
-    id: number;
-    name: string;
-    email: string;
-    phone?: string | null;
-    role: string;
-    isVerified: boolean;
-    reportsCount: number;
-    createdAt: string;
-  } | null;
+  user: LocalUser | null;
   token: string | null;
   isLoading: boolean;
   setAuth: (token: string) => void;
@@ -28,32 +29,63 @@ const AuthContext = createContext<AuthContextValue>({
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem("auth_token"));
+  const { isSignedIn, isLoaded } = useClerkAuth();
+  const { user: clerkUser } = useUser();
+  const { signOut } = useClerk();
+  const [localUser, setLocalUser] = useState<LocalUser | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [synced, setSynced] = useState(false);
 
   useEffect(() => {
-    setAuthTokenGetter(() => localStorage.getItem("auth_token"));
-  }, []);
+    if (!isLoaded || !isSignedIn || !clerkUser || synced || syncing) return;
 
-  const { data: user, isLoading } = useGetMe({
-    query: {
-      enabled: !!token,
-      retry: false,
-      queryKey: ["getMe", token],
-    },
-  });
+    setSyncing(true);
+    const email = clerkUser.primaryEmailAddress?.emailAddress ?? "";
+    const name = clerkUser.fullName || email.split("@")[0];
 
-  function setAuth(newToken: string) {
-    localStorage.setItem("auth_token", newToken);
-    setToken(newToken);
-  }
+    fetch("/api/auth/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ name, email }),
+    })
+      .then((r) => {
+        if (!r.ok) throw new Error("sync failed");
+        return r.json();
+      })
+      .then((user) => {
+        setLocalUser(user);
+        setSynced(true);
+      })
+      .catch(() => {})
+      .finally(() => setSyncing(false));
+  }, [isSignedIn, isLoaded, clerkUser, synced, syncing]);
 
-  function clearAuth() {
-    localStorage.removeItem("auth_token");
-    setToken(null);
-  }
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      setLocalUser(null);
+      setSynced(false);
+    }
+  }, [isSignedIn, isLoaded]);
+
+  const clearAuth = useCallback(() => {
+    setLocalUser(null);
+    setSynced(false);
+    signOut();
+  }, [signOut]);
+
+  const isLoading = !isLoaded || (!!isSignedIn && !synced && !localUser);
 
   return (
-    <AuthContext.Provider value={{ user: user ?? null, token, isLoading: !!token && isLoading, setAuth, clearAuth }}>
+    <AuthContext.Provider
+      value={{
+        user: localUser,
+        token: null,
+        isLoading,
+        setAuth: () => {},
+        clearAuth,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

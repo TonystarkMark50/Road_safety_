@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { getAuth } from "@clerk/express";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { hashPassword, generateToken, authMiddleware } from "../lib/auth";
@@ -51,7 +52,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     return;
   }
   const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email));
-  if (!user || user.passwordHash !== hashPassword(password)) {
+  if (!user || !user.passwordHash || user.passwordHash !== hashPassword(password)) {
     res.status(401).json({ error: "Invalid email or password" });
     return;
   }
@@ -68,6 +69,75 @@ router.post("/auth/login", async (req, res): Promise<void> => {
       createdAt: user.createdAt,
     },
     token,
+  });
+});
+
+router.post("/auth/sync", async (req, res): Promise<void> => {
+  const auth = getAuth(req);
+  if (!auth?.userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const { name, email, phone } = req.body;
+  if (!email) {
+    res.status(400).json({ error: "Email is required" });
+    return;
+  }
+
+  const [existingByClerk] = await db.select().from(usersTable).where(eq(usersTable.clerkId, auth.userId));
+  if (existingByClerk) {
+    res.json({
+      id: existingByClerk.id,
+      name: existingByClerk.name,
+      email: existingByClerk.email,
+      phone: existingByClerk.phone,
+      role: existingByClerk.role,
+      isVerified: existingByClerk.isVerified,
+      reportsCount: existingByClerk.reportsCount,
+      createdAt: existingByClerk.createdAt,
+    });
+    return;
+  }
+
+  const [existingByEmail] = await db.select().from(usersTable).where(eq(usersTable.email, email));
+  if (existingByEmail) {
+    const [updated] = await db.update(usersTable)
+      .set({ clerkId: auth.userId, isVerified: true })
+      .where(eq(usersTable.id, existingByEmail.id))
+      .returning();
+    res.json({
+      id: updated.id,
+      name: updated.name,
+      email: updated.email,
+      phone: updated.phone,
+      role: updated.role,
+      isVerified: updated.isVerified,
+      reportsCount: updated.reportsCount,
+      createdAt: updated.createdAt,
+    });
+    return;
+  }
+
+  const [newUser] = await db.insert(usersTable).values({
+    clerkId: auth.userId,
+    name: name || email.split("@")[0],
+    email,
+    passwordHash: null,
+    phone: phone ?? null,
+    role: "citizen",
+    isVerified: true,
+  }).returning();
+
+  res.status(201).json({
+    id: newUser.id,
+    name: newUser.name,
+    email: newUser.email,
+    phone: newUser.phone,
+    role: newUser.role,
+    isVerified: newUser.isVerified,
+    reportsCount: newUser.reportsCount,
+    createdAt: newUser.createdAt,
   });
 });
 

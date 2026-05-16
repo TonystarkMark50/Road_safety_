@@ -1,253 +1,186 @@
-import { Feather } from "@expo/vector-icons";
-import { useLogin } from "@workspace/api-client-react";
+import * as WebBrowser from "expo-web-browser";
+import * as AuthSession from "expo-auth-session";
+import { useSSO } from "@clerk/expo";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useAuth } from "@/contexts/AuthContext";
 import { useColors } from "@/hooks/useColors";
+
+WebBrowser.maybeCompleteAuthSession();
+
+function useWarmUpBrowser() {
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    void WebBrowser.warmUpAsync();
+    return () => {
+      void WebBrowser.coolDownAsync();
+    };
+  }, []);
+}
 
 export default function LoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { login } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  useWarmUpBrowser();
+
+  const { startSSOFlow } = useSSO();
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const loginMutation = useLogin();
-
-  async function handleLogin() {
-    if (!email.trim() || !password.trim()) {
-      setError("Please enter email and password.");
-      return;
-    }
+  const handleGoogleLogin = useCallback(async () => {
     setError("");
+    setLoading(true);
     try {
-      const res = await loginMutation.mutateAsync({ data: { email: email.trim(), password } });
-      await login(res.user as Parameters<typeof login>[0], res.token);
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace("/(tabs)");
+      const { createdSessionId, setActive } = await startSSOFlow({
+        strategy: "oauth_google",
+        redirectUrl: AuthSession.makeRedirectUri(),
+      });
+
+      if (createdSessionId) {
+        await setActive!({
+          session: createdSessionId,
+          navigate: async ({ session, decorateUrl }) => {
+            if (session?.currentTask) return;
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            router.replace("/(tabs)");
+          },
+        });
+      }
     } catch {
-      setError("Invalid email or password.");
+      setError("Google sign-in failed. Please try again.");
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setLoading(false);
     }
-  }
+  }, [startSSOFlow]);
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.flex, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <ScrollView
-        contentContainerStyle={[
-          styles.container,
-          { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24 },
-        ]}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.logoWrap}>
-          <View style={[styles.logoCircle, { backgroundColor: colors.primary + "20" }]}>
-            <Feather name="shield" size={36} color={colors.primary} />
-          </View>
-          <Text style={[styles.appName, { color: colors.foreground }]}>RoadSoS AI</Text>
-          <Text style={[styles.tagline, { color: colors.mutedForeground }]}>
-            Civic Safety Platform
-          </Text>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top + 60, paddingBottom: insets.bottom + 32 }]}>
+      <View style={styles.header}>
+        <View style={[styles.logoCircle, { backgroundColor: colors.primary + "20", borderColor: colors.primary + "40" }]}>
+          <Text style={[styles.logoEmoji]}>🛣️</Text>
         </View>
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+          RoadSoS AI
+        </Text>
+        <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          Report road hazards, get help fast
+        </Text>
+      </View>
 
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.heading, { color: colors.foreground }]}>Welcome back</Text>
-          <Text style={[styles.sub, { color: colors.mutedForeground }]}>
-            Sign in to your account
+      <View style={styles.body}>
+        {error ? (
+          <View style={[styles.errorBox, { backgroundColor: "#ef444420", borderColor: "#ef4444" }]}>
+            <Text style={[styles.errorText, { fontFamily: "Inter_400Regular" }]}>{error}</Text>
+          </View>
+        ) : null}
+
+        <TouchableOpacity
+          style={[
+            styles.googleButton,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              opacity: loading ? 0.7 : 1,
+            },
+          ]}
+          onPress={handleGoogleLogin}
+          disabled={loading}
+          activeOpacity={0.8}
+        >
+          {loading ? (
+            <ActivityIndicator color={colors.primary} size="small" />
+          ) : (
+            <Text style={styles.googleIcon}>G</Text>
+          )}
+          <Text style={[styles.googleButtonText, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>
+            {loading ? "Signing in…" : "Continue with Google"}
           </Text>
-
-          {error ? (
-            <View style={[styles.errorBox, { backgroundColor: colors.destructive + "18" }]}>
-              <Feather name="alert-circle" size={14} color={colors.destructive} />
-              <Text style={[styles.errorText, { color: colors.destructive }]}>{error}</Text>
-            </View>
-          ) : null}
-
-          <View style={styles.fields}>
-            <View style={[styles.inputWrap, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-              <Feather name="mail" size={16} color={colors.mutedForeground} />
-              <TextInput
-                style={[styles.input, { color: colors.foreground }]}
-                placeholder="Email address"
-                placeholderTextColor={colors.mutedForeground}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-
-            <View style={[styles.inputWrap, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-              <Feather name="lock" size={16} color={colors.mutedForeground} />
-              <TextInput
-                style={[styles.input, { color: colors.foreground }]}
-                placeholder="Password"
-                placeholderTextColor={colors.mutedForeground}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-              />
-              <TouchableOpacity onPress={() => setShowPassword((v) => !v)}>
-                <Feather
-                  name={showPassword ? "eye-off" : "eye"}
-                  size={16}
-                  color={colors.mutedForeground}
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <TouchableOpacity
-            style={[styles.btn, { backgroundColor: colors.primary }, loginMutation.isPending && styles.btnDisabled]}
-            onPress={handleLogin}
-            disabled={loginMutation.isPending}
-            activeOpacity={0.8}
-          >
-            {loginMutation.isPending ? (
-              <ActivityIndicator color={colors.primaryForeground} size="small" />
-            ) : (
-              <Text style={[styles.btnText, { color: colors.primaryForeground }]}>Sign In</Text>
-            )}
-          </TouchableOpacity>
-
-          <View style={styles.row}>
-            <Text style={[styles.rowText, { color: colors.mutedForeground }]}>
-              Don't have an account?{" "}
-            </Text>
-            <TouchableOpacity onPress={() => router.push("/register")}>
-              <Text style={[styles.link, { color: colors.primary }]}>Register</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <TouchableOpacity style={styles.skipBtn} onPress={() => router.replace("/(tabs)")}>
-          <Text style={[styles.skipText, { color: colors.mutedForeground }]}>Browse as guest</Text>
-          <Feather name="arrow-right" size={14} color={colors.mutedForeground} />
         </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+        <Text style={[styles.legal, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          By signing in, you agree to our Terms of Service and Privacy Policy.
+        </Text>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
   container: {
-    padding: 20,
-    gap: 24,
+    flex: 1,
+    paddingHorizontal: 24,
   },
-  logoWrap: {
+  header: {
     alignItems: "center",
-    gap: 8,
+    marginBottom: 48,
   },
   logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
+    marginBottom: 20,
   },
-  appName: {
-    fontSize: 28,
-    fontFamily: "Inter_700Bold",
-    letterSpacing: -0.5,
+  logoEmoji: {
+    fontSize: 40,
   },
-  tagline: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
+  title: {
+    fontSize: 32,
+    marginBottom: 10,
   },
-  card: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 20,
+  subtitle: {
+    fontSize: 16,
+    textAlign: "center",
+    lineHeight: 22,
+  },
+  body: {
     gap: 16,
   },
-  heading: {
-    fontSize: 22,
-    fontFamily: "Inter_700Bold",
-  },
-  sub: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    marginTop: -8,
-  },
   errorBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    padding: 10,
-    borderRadius: 8,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
   },
   errorText: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-    flex: 1,
+    fontSize: 14,
+    color: "#ef4444",
+    textAlign: "center",
   },
-  fields: { gap: 10 },
-  inputWrap: {
+  googleButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 10,
+    justifyContent: "center",
     borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    gap: 12,
   },
-  input: {
-    flex: 1,
-    fontSize: 15,
-    fontFamily: "Inter_400Regular",
+  googleIcon: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#4285F4",
   },
-  btn: {
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: "center",
+  googleButtonText: {
+    fontSize: 16,
   },
-  btnDisabled: { opacity: 0.6 },
-  btnText: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  rowText: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-  },
-  link: {
-    fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
-  },
-  skipBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-  },
-  skipText: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
+  legal: {
+    fontSize: 12,
+    textAlign: "center",
+    lineHeight: 18,
+    marginTop: 8,
   },
 });

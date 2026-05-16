@@ -1,9 +1,6 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuth as useClerkAuth, useUser, useClerk } from "@clerk/expo";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
-
-const TOKEN_KEY = "roadsosai_token";
-const USER_KEY = "roadsosai_user";
 
 export interface AuthUser {
   id: number;
@@ -33,54 +30,66 @@ const AuthContext = createContext<AuthContextValue>({
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { isSignedIn, isLoaded, getToken } = useClerkAuth();
+  const { user: clerkUser } = useUser();
+  const { signOut } = useClerk();
+  const [localUser, setLocalUser] = useState<AuthUser | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [synced, setSynced] = useState(false);
 
   useEffect(() => {
-    async function loadAuth() {
-      try {
-        const [storedToken, storedUser] = await Promise.all([
-          AsyncStorage.getItem(TOKEN_KEY),
-          AsyncStorage.getItem(USER_KEY),
-        ]);
-        if (storedToken && storedUser) {
-          setToken(storedToken);
-          setUser(JSON.parse(storedUser));
-        }
-      } catch {
-        // ignore
-      } finally {
-        setIsLoading(false);
-      }
+    setAuthTokenGetter(() => getToken());
+  }, [getToken]);
+
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn || !clerkUser || synced || syncing) return;
+
+    setSyncing(true);
+    const email = clerkUser.primaryEmailAddress?.emailAddress ?? "";
+    const name = clerkUser.fullName || email.split("@")[0];
+
+    getToken()
+      .then((token) =>
+        fetch(`https://${process.env.EXPO_PUBLIC_DOMAIN}/api/auth/sync`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ name, email }),
+        }),
+      )
+      .then((r) => {
+        if (!r.ok) throw new Error("sync failed");
+        return r.json();
+      })
+      .then((user: AuthUser) => {
+        setLocalUser(user);
+        setSynced(true);
+      })
+      .catch(() => {})
+      .finally(() => setSyncing(false));
+  }, [isSignedIn, isLoaded, clerkUser, synced, syncing, getToken]);
+
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      setLocalUser(null);
+      setSynced(false);
     }
-    loadAuth();
-  }, []);
-
-  useEffect(() => {
-    setAuthTokenGetter(() => token);
-  }, [token]);
-
-  const login = useCallback(async (newUser: AuthUser, newToken: string) => {
-    await Promise.all([
-      AsyncStorage.setItem(TOKEN_KEY, newToken),
-      AsyncStorage.setItem(USER_KEY, JSON.stringify(newUser)),
-    ]);
-    setToken(newToken);
-    setUser(newUser);
-  }, []);
+  }, [isSignedIn, isLoaded]);
 
   const logout = useCallback(async () => {
-    await Promise.all([
-      AsyncStorage.removeItem(TOKEN_KEY),
-      AsyncStorage.removeItem(USER_KEY),
-    ]);
-    setToken(null);
-    setUser(null);
-  }, []);
+    setLocalUser(null);
+    setSynced(false);
+    await signOut();
+  }, [signOut]);
+
+  const login = useCallback(async (_user: AuthUser, _token: string) => {}, []);
+
+  const isLoading = !isLoaded || (!!isSignedIn && !synced && !localUser);
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user: localUser, token: null, isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
