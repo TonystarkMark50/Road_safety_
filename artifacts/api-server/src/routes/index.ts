@@ -8,6 +8,7 @@ import roadsRouter from "./roads";
 import budgetRouter from "./budget";
 import notificationsRouter from "./notifications";
 import openaiRouter from "./openai";
+import mapRouter from "./map";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(roadsRouter);
 router.use(budgetRouter);
 router.use(notificationsRouter);
 router.use(openaiRouter);
+router.use(mapRouter);
 
 export default router;
