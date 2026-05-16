@@ -20,6 +20,7 @@ import Transparency from "@/pages/transparency";
 import Budget from "@/pages/budget";
 import Admin from "@/pages/admin";
 import Settings from "@/pages/settings";
+import ChatBot from "@/components/ChatBot";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -221,6 +222,7 @@ function ClerkProviderWithRoutes() {
               <Route path="/settings" component={() => <ProtectedRoute component={Settings} />} />
               <Route component={() => <Redirect to="/" />} />
             </Switch>
+            <ChatBot />
           </AuthProvider>
           <Toaster />
         </TooltipProvider>

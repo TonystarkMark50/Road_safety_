@@ -7,6 +7,7 @@ import dashboardRouter from "./dashboard";
 import roadsRouter from "./roads";
 import budgetRouter from "./budget";
 import notificationsRouter from "./notifications";
+import openaiRouter from "./openai";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(dashboardRouter);
 router.use(roadsRouter);
 router.use(budgetRouter);
 router.use(notificationsRouter);
+router.use(openaiRouter);
 
 export default router;
