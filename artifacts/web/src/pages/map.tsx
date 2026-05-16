@@ -2,9 +2,14 @@ import { useGetHeatmapData, getGetHeatmapDataQueryKey, useListReports, getListRe
 import { StatusBadge, SeverityBadge } from "@/components/StatusBadge";
 import { MapPin, Layers, AlertCircle, Search, X, Navigation } from "lucide-react";
 import { Link } from "wouter";
-import { useEffect, useRef, useState } from "react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { useEffect, useRef, useState, useCallback } from "react";
+import {
+  GoogleMap,
+  useJsApiLoader,
+  Circle,
+  Marker,
+  InfoWindow,
+} from "@react-google-maps/api";
 
 const categoryColors: Record<string, string> = {
   pothole: "#3b82f6",
@@ -17,14 +22,28 @@ const categoryColors: Record<string, string> = {
   other: "#6b7280",
 };
 
-const severityWeight: Record<string, number> = {
-  critical: 14,
-  high: 11,
-  medium: 8,
-  low: 6,
+const severityRadius: Record<string, number> = {
+  critical: 120,
+  high: 90,
+  medium: 65,
+  low: 45,
 };
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+const MAP_CONTAINER_STYLE = { width: "100%", height: "480px" };
+const DEFAULT_CENTER = { lat: 28.6139, lng: 77.209 };
+const MAP_OPTIONS: google.maps.MapOptions = {
+  disableDefaultUI: false,
+  mapTypeControl: true,
+  streetViewControl: false,
+  fullscreenControl: true,
+  mapTypeId: "roadmap",
+  styles: [
+    { featureType: "poi", stylers: [{ visibility: "off" }] },
+    { featureType: "transit", stylers: [{ visibility: "simplified" }] },
+  ],
+};
 
 interface GeoFeature {
   geometry: { coordinates: [number, number] };
@@ -38,83 +57,29 @@ export default function MapView() {
   const reports = reportsData?.reports ?? [];
   const points = heatmap ?? [];
 
-  const mapRef = useRef<L.Map | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const markersRef = useRef<L.LayerGroup | null>(null);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch(`${BASE}/api/map/config`)
+      .then((r) => r.json())
+      .then((d) => setApiKey(d.googleMapsApiKey ?? ""))
+      .catch(() => setApiKey(""));
+  }, []);
+
+  const { isLoaded } = useJsApiLoader({
+    googleMapsApiKey: apiKey ?? "",
+    id: "google-map-script",
+  });
+
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const onLoad = useCallback((map: google.maps.Map) => { mapRef.current = map; }, []);
+  const onUnmount = useCallback(() => { mapRef.current = null; }, []);
 
   const [search, setSearch] = useState("");
   const [searching, setSearching] = useState(false);
   const [suggestions, setSuggestions] = useState<GeoFeature[]>([]);
   const [selectedReport, setSelectedReport] = useState<typeof reports[0] | null>(null);
-
-  useEffect(() => {
-    if (!containerRef.current || mapRef.current) return;
-
-    const map = L.map(containerRef.current, {
-      center: [28.6139, 77.2090],
-      zoom: 12,
-      zoomControl: true,
-    });
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 19,
-    }).addTo(map);
-
-    markersRef.current = L.layerGroup().addTo(map);
-    mapRef.current = map;
-
-    return () => {
-      map.remove();
-      mapRef.current = null;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!mapRef.current || !markersRef.current) return;
-    markersRef.current.clearLayers();
-
-    points.forEach((p) => {
-      const color = categoryColors[p.category] ?? "#6b7280";
-      const radius = Math.max(20, p.intensity * 60);
-      L.circle([p.latitude, p.longitude], {
-        radius,
-        color,
-        fillColor: color,
-        fillOpacity: 0.12,
-        weight: 1,
-        opacity: 0.3,
-      }).addTo(markersRef.current!);
-    });
-
-    reports.forEach((r) => {
-      if (!r.latitude || !r.longitude) return;
-      const color = categoryColors[r.category] ?? "#6b7280";
-      const radius = severityWeight[r.severity] ?? 8;
-
-      const marker = L.circleMarker([r.latitude, r.longitude], {
-        radius,
-        color: "#fff",
-        weight: 2,
-        fillColor: color,
-        fillOpacity: 0.9,
-      });
-
-      marker.bindPopup(`
-        <div style="min-width:180px;font-family:system-ui,sans-serif">
-          <p style="font-weight:700;font-size:13px;margin:0 0 4px">${r.title}</p>
-          <p style="font-size:11px;color:#888;margin:0 0 6px">${r.address}</p>
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <span style="background:${color}22;color:${color};border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;text-transform:capitalize">${r.category.replace("_", " ")}</span>
-            <span style="background:#f3f4f6;color:#374151;border-radius:4px;padding:2px 8px;font-size:11px;text-transform:capitalize">${r.severity}</span>
-          </div>
-        </div>
-      `);
-
-      marker.on("click", () => setSelectedReport(r));
-      marker.addTo(markersRef.current!);
-    });
-  }, [reports, points]);
+  const [infoPos, setInfoPos] = useState<{ lat: number; lng: number } | null>(null);
 
   async function handleGeocode(q: string) {
     if (!q.trim()) { setSuggestions([]); return; }
@@ -129,23 +94,26 @@ export default function MapView() {
 
   function selectPlace(feat: GeoFeature) {
     const [lng, lat] = feat.geometry.coordinates;
-    mapRef.current?.setView([lat, lng], 15);
+    mapRef.current?.panTo({ lat, lng });
+    mapRef.current?.setZoom(15);
     setSuggestions([]);
     setSearch(feat.properties.label);
-
-    L.marker([lat, lng], {
-      icon: L.divIcon({
-        className: "",
-        html: `<div style="background:#6366f1;width:14px;height:14px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>`,
-        iconAnchor: [7, 7],
-      }),
-    }).addTo(mapRef.current!);
   }
 
   function flyToReport(r: typeof reports[0]) {
     if (!r.latitude || !r.longitude) return;
-    mapRef.current?.setView([r.latitude, r.longitude], 16);
+    mapRef.current?.panTo({ lat: r.latitude, lng: r.longitude });
+    mapRef.current?.setZoom(16);
     setSelectedReport(r);
+    setInfoPos({ lat: r.latitude, lng: r.longitude });
+  }
+
+  if (apiKey === null) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">Loading map configuration…</div>
+      </div>
+    );
   }
 
   return (
@@ -200,11 +168,82 @@ export default function MapView() {
             </div>
           </div>
 
-          <div
-            ref={containerRef}
-            className="flex-1"
-            style={{ height: "480px", zIndex: 0 }}
-          />
+          {isLoaded ? (
+            <GoogleMap
+              mapContainerStyle={MAP_CONTAINER_STYLE}
+              center={DEFAULT_CENTER}
+              zoom={12}
+              options={MAP_OPTIONS}
+              onLoad={onLoad}
+              onUnmount={onUnmount}
+            >
+              {points.map((p, i) => (
+                <Circle
+                  key={`heat-${i}`}
+                  center={{ lat: p.latitude, lng: p.longitude }}
+                  radius={Math.max(200, p.intensity * 800)}
+                  options={{
+                    fillColor: categoryColors[p.category] ?? "#6b7280",
+                    fillOpacity: 0.15,
+                    strokeColor: categoryColors[p.category] ?? "#6b7280",
+                    strokeOpacity: 0.3,
+                    strokeWeight: 1,
+                  }}
+                />
+              ))}
+
+              {reports.map((r) => {
+                if (!r.latitude || !r.longitude) return null;
+                const color = categoryColors[r.category] ?? "#6b7280";
+                return (
+                  <Marker
+                    key={r.id}
+                    position={{ lat: r.latitude, lng: r.longitude }}
+                    icon={{
+                      path: google.maps.SymbolPath.CIRCLE,
+                      scale: severityRadius[r.severity] ? severityRadius[r.severity] / 10 : 7,
+                      fillColor: color,
+                      fillOpacity: 0.9,
+                      strokeColor: "#ffffff",
+                      strokeWeight: 2,
+                    }}
+                    onClick={() => {
+                      setSelectedReport(r);
+                      setInfoPos({ lat: r.latitude!, lng: r.longitude! });
+                    }}
+                  />
+                );
+              })}
+
+              {selectedReport && infoPos && (
+                <InfoWindow
+                  position={infoPos}
+                  onCloseClick={() => { setSelectedReport(null); setInfoPos(null); }}
+                >
+                  <div style={{ minWidth: 180, fontFamily: "system-ui,sans-serif" }}>
+                    <p style={{ fontWeight: 700, fontSize: 13, margin: "0 0 4px" }}>{selectedReport.title}</p>
+                    <p style={{ fontSize: 11, color: "#888", margin: "0 0 6px" }}>{selectedReport.address}</p>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
+                      <span style={{
+                        background: `${categoryColors[selectedReport.category] ?? "#6b7280"}22`,
+                        color: categoryColors[selectedReport.category] ?? "#6b7280",
+                        borderRadius: 4, padding: "2px 8px", fontSize: 11, fontWeight: 600, textTransform: "capitalize"
+                      }}>
+                        {selectedReport.category.replace("_", " ")}
+                      </span>
+                      <span style={{ background: "#f3f4f6", color: "#374151", borderRadius: 4, padding: "2px 8px", fontSize: 11, textTransform: "capitalize" }}>
+                        {selectedReport.severity}
+                      </span>
+                    </div>
+                  </div>
+                </InfoWindow>
+              )}
+            </GoogleMap>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm" style={{ height: 480 }}>
+              {apiKey ? "Loading Google Maps…" : "Google Maps API key not configured"}
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">
@@ -226,7 +265,7 @@ export default function MapView() {
             <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
               <div className="flex items-start justify-between gap-2 mb-2">
                 <h3 className="text-sm font-semibold text-foreground leading-tight">{selectedReport.title}</h3>
-                <button onClick={() => setSelectedReport(null)} className="text-muted-foreground hover:text-foreground shrink-0">
+                <button onClick={() => { setSelectedReport(null); setInfoPos(null); }} className="text-muted-foreground hover:text-foreground shrink-0">
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>

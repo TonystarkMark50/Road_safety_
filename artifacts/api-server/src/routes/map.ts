@@ -5,6 +5,11 @@ import { logger } from "../lib/logger";
 const router = Router();
 const ORS_KEY = process.env.OPENROUTESERVICE_API_KEY ?? "";
 const ORS_BASE = "https://api.openrouteservice.org";
+const GMAPS_KEY = process.env.GOOGLE_MAPS_API_KEY ?? "";
+
+router.get("/map/config", optionalAuth, (_req, res): void => {
+  res.json({ googleMapsApiKey: GMAPS_KEY });
+});
 
 router.get("/map/geocode", optionalAuth, async (req, res): Promise<void> => {
   const { q } = req.query as Record<string, string>;
