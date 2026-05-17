@@ -4,12 +4,9 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
-  Linking,
+  Animated,
   Modal,
   Platform,
-  Pressable,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -21,7 +18,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
 
-/* ─── Constants ───────────────────────────────────────────────────── */
+/* ─── Types & Constants ───────────────────────────────────────────── */
+
+type Report = {
+  id: number; ticketId: string; title: string; category: string;
+  description: string; status: string; latitude: number | null;
+  longitude: number | null; address: string; severity: string;
+  upvotes: number; createdAt: string; userName?: string;
+};
 
 const CATEGORY_COLORS: Record<string, string> = {
   accident:        "#ef4444",
@@ -35,12 +39,11 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 const CATEGORIES = [
-  { value: "all",             label: "All" },
   { value: "pothole",         label: "Pothole" },
   { value: "road_damage",     label: "Road Damage" },
   { value: "accident",        label: "Accident" },
   { value: "waterlogging",    label: "Waterlogging" },
-  { value: "signal_failure",  label: "Signal" },
+  { value: "signal_failure",  label: "Signal Failure" },
   { value: "illegal_parking", label: "Illegal Parking" },
   { value: "congestion",      label: "Congestion" },
   { value: "other",           label: "Other" },
@@ -54,121 +57,172 @@ const SEVERITIES = [
 ];
 
 const SEVERITY_COLORS: Record<string, string> = {
-  critical: "#ef4444",
-  high:     "#f97316",
-  medium:   "#eab308",
-  low:      "#22c55e",
-};
-
-type Report = {
-  id: number; ticketId: string; title: string; category: string;
-  description: string; status: string; latitude: number | null;
-  longitude: number | null; address: string; severity: string;
-  upvotes: number; createdAt: string; userName?: string;
+  critical: "#ef4444", high: "#f97316", medium: "#eab308", low: "#22c55e",
 };
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN ?? ""}`;
 
-async function fetchReports(): Promise<Report[]> {
-  try {
-    const res = await fetch(`${BASE_URL}/api/reports?limit=100`, { credentials: "include" });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.reports ?? [];
-  } catch {
-    return [];
+/* ─── Leaflet HTML Builder ────────────────────────────────────────── */
+
+function buildMapHtml(reports: Report[]): string {
+  const safe = JSON.stringify(reports).replace(/<\/script>/gi, "<\\/script>");
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;background:#0f172a}
+  #map{width:100%;height:100%}
+  .lp .leaflet-popup-content-wrapper{
+    background:#1e293b;border:1px solid rgba(255,255,255,.1);
+    border-radius:12px;color:#e2e8f0;box-shadow:0 20px 40px rgba(0,0,0,.6);padding:0
   }
+  .lp .leaflet-popup-content{margin:12px 14px}
+  .lp .leaflet-popup-tip{background:#1e293b}
+  .lp .leaflet-popup-close-button{color:#64748b!important;font-size:18px!important;top:6px!important;right:8px!important}
+  .leaflet-control-zoom a{background:#1e293b!important;color:#e2e8f0!important;border-color:#334155!important}
+  .leaflet-control-attribution{background:rgba(15,23,42,.8)!important;color:#64748b!important;font-size:9px}
+  .leaflet-control-attribution a{color:#94a3b8!important}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<script>
+var CAT_COLORS=${JSON.stringify(CATEGORY_COLORS)};
+var reports=${safe};
+function catLabel(c){return c.replace(/_/g,' ')}
+function timeAgo(iso){
+  var d=(Date.now()-new Date(iso).getTime())/1000;
+  if(d<60)return 'just now';
+  if(d<3600)return Math.floor(d/60)+'m ago';
+  if(d<86400)return Math.floor(d/3600)+'h ago';
+  return Math.floor(d/86400)+'d ago';
+}
+function sevColor(s){return{critical:'#ef4444',high:'#f97316',medium:'#eab308',low:'#22c55e'}[s]||'#6b7280'}
+function sevRadius(s){return{critical:14,high:11,medium:9,low:7}[s]||9}
+function makeIcon(cat,sev){
+  var c=CAT_COLORS[cat]||'#9ca3af';
+  var r=sevRadius(sev);var d=r*2+4;
+  return L.divIcon({
+    className:'',
+    html:'<svg xmlns="http://www.w3.org/2000/svg" width="'+d+'" height="'+d+'"><circle cx="'+(r+2)+'" cy="'+(r+2)+'" r="'+r+'" fill="'+c+'" fill-opacity=".92" stroke="#fff" stroke-width="2"/><\/svg>',
+    iconAnchor:[r+2,r+2],popupAnchor:[0,-(r+4)]
+  });
+}
+var map=L.map('map',{center:[28.6139,77.209],zoom:12,zoomControl:true});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+  attribution:'© OSM © CARTO',subdomains:'abcd',maxZoom:19
+}).addTo(map);
+var layers=L.layerGroup().addTo(map);
+function renderReports(list){
+  layers.clearLayers();
+  list.forEach(function(r){
+    if(!r.latitude||!r.longitude)return;
+    var c=CAT_COLORS[r.category]||'#9ca3af';
+    var sc=sevColor(r.severity);
+    var m=L.marker([r.latitude,r.longitude],{icon:makeIcon(r.category,r.severity)});
+    m.bindPopup(
+      '<div style="min-width:185px;font-family:system-ui,sans-serif">'+
+      '<p style="font-weight:700;font-size:13px;margin:0 0 3px;line-height:1.3">'+r.title+'</p>'+
+      '<p style="font-size:10px;color:#94a3b8;margin:0 0 7px">'+r.address+'</p>'+
+      '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px">'+
+      '<span style="background:'+c+'22;color:'+c+';border-radius:4px;padding:2px 7px;font-size:10px;font-weight:600;text-transform:capitalize">'+catLabel(r.category)+'</span>'+
+      '<span style="background:'+sc+'22;color:'+sc+';border-radius:4px;padding:2px 7px;font-size:10px;font-weight:600;text-transform:capitalize">'+r.severity+'</span>'+
+      '</div>'+
+      '<p style="font-size:10px;color:#94a3b8;margin:0 0 5px">'+r.description.slice(0,90)+(r.description.length>90?'…':'')+'</p>'+
+      '<div style="display:flex;justify-content:space-between">'+
+      '<span style="font-size:9px;color:#64748b">'+timeAgo(r.createdAt)+'</span>'+
+      '<span style="font-size:9px;color:#64748b">▲ '+r.upvotes+'</span>'+
+      '</div></div>',
+      {maxWidth:240,className:'lp'}
+    );
+    m.addTo(layers);
+  });
+}
+renderReports(reports);
+window.updateReports=function(json){try{renderReports(JSON.parse(json));}catch(e){}};
+<\/script>
+</body>
+</html>`;
 }
 
-async function submitReport(body: object): Promise<boolean> {
-  try {
-    const res = await fetch(`${BASE_URL}/api/reports`, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
+/* ─── Platform-specific map renderer ─────────────────────────────── */
 
-function timeAgo(iso: string) {
-  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
-}
+function NativeMapView({ html }: { html: string }) {
+  const WebView = require("react-native-webview").WebView;
+  const ref = useRef<any>(null);
+  const prevHtmlRef = useRef<string>("");
 
-function openInMaps(lat: number, lng: number, title: string) {
-  const encoded = encodeURIComponent(title);
-  const url =
-    Platform.OS === "ios"
-      ? `maps://?ll=${lat},${lng}&q=${encoded}`
-      : `geo:${lat},${lng}?q=${encoded}`;
-  Linking.openURL(url).catch(() =>
-    Linking.openURL(`https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}&zoom=16`)
-  );
-}
-
-/* ─── Report Card ─────────────────────────────────────────────────── */
-
-function ReportCard({ item, colors }: { item: Report; colors: ReturnType<typeof useColors> }) {
-  const catColor = CATEGORY_COLORS[item.category] ?? "#9ca3af";
-  const sevColor = SEVERITY_COLORS[item.severity] ?? "#6b7280";
-  const canNavigate = !!item.latitude && !!item.longitude;
+  useEffect(() => {
+    if (!html || !ref.current) return;
+    if (prevHtmlRef.current && prevHtmlRef.current !== html) {
+      const escaped = JSON.stringify(JSON.parse(
+        html.match(/var reports=(.+?);function/s)?.[1] ?? "[]"
+      )).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+      ref.current.injectJavaScript?.(`window.updateReports('${escaped}');true;`);
+      prevHtmlRef.current = html;
+      return;
+    }
+    prevHtmlRef.current = html;
+  }, [html]);
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <View style={styles.cardHeader}>
-        <View style={[styles.catDot, { backgroundColor: catColor }]} />
-        <View style={styles.cardTitleWrap}>
-          <Text style={[styles.cardTitle, { color: colors.foreground }]} numberOfLines={1}>
-            {item.title}
-          </Text>
-          <Text style={[styles.cardAddress, { color: colors.mutedForeground }]} numberOfLines={1}>
-            {item.address}
-          </Text>
-        </View>
-        {canNavigate && (
-          <TouchableOpacity
-            style={[styles.navBtn, { backgroundColor: colors.primary + "18" }]}
-            onPress={() => openInMaps(item.latitude!, item.longitude!, item.title)}
-            activeOpacity={0.7}
-          >
-            <Feather name="navigation" size={13} color={colors.primary} />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      <View style={styles.cardBadges}>
-        <View style={[styles.badge, { backgroundColor: catColor + "22" }]}>
-          <Text style={[styles.badgeText, { color: catColor }]}>
-            {item.category.replace("_", " ")}
-          </Text>
-        </View>
-        <View style={[styles.badge, { backgroundColor: sevColor + "22" }]}>
-          <Text style={[styles.badgeText, { color: sevColor }]}>{item.severity}</Text>
-        </View>
-        <View style={[styles.badge, { backgroundColor: colors.muted }]}>
-          <Text style={[styles.badgeText, { color: colors.mutedForeground }]}>
-            {item.status.replace("_", " ")}
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.cardFooter}>
-        <Text style={[styles.cardMeta, { color: colors.mutedForeground }]}>
-          ▲ {item.upvotes}  ·  {timeAgo(item.createdAt)}
-        </Text>
-        <Text style={[styles.cardMeta, { color: colors.mutedForeground }]}>
-          {item.ticketId}
-        </Text>
-      </View>
-    </View>
+    <WebView
+      ref={ref}
+      source={{ html }}
+      style={{ flex: 1 }}
+      originWhitelist={["*"]}
+      javaScriptEnabled
+      domStorageEnabled
+      allowsInlineMediaPlayback
+      mixedContentMode="always"
+      onError={() => {}}
+    />
   );
+}
+
+function WebMapView({ html }: { html: string }) {
+  const containerRef = useRef<any>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+
+  useEffect(() => {
+    if (!html || !containerRef.current) return;
+    const container = containerRef.current as HTMLDivElement;
+
+    if (!iframeRef.current) {
+      const iframe = document.createElement("iframe");
+      Object.assign(iframe.style, {
+        width: "100%", height: "100%", border: "none",
+        position: "absolute", top: "0", left: "0",
+      });
+      container.appendChild(iframe);
+      iframeRef.current = iframe;
+    }
+
+    const iframe = iframeRef.current;
+    if (iframe.contentDocument) {
+      iframe.contentDocument.open();
+      iframe.contentDocument.write(html);
+      iframe.contentDocument.close();
+    } else {
+      iframe.srcdoc = html;
+    }
+  }, [html]);
+
+  return (
+    <div
+      ref={containerRef}
+      style={{ flex: 1, width: "100%", height: "100%", position: "relative" } as React.CSSProperties}
+    />
+  );
+}
+
+function MapView({ html }: { html: string }) {
+  if (Platform.OS === "web") return <WebMapView html={html} />;
+  return <NativeMapView html={html} />;
 }
 
 /* ─── Report Form Modal ───────────────────────────────────────────── */
@@ -176,9 +230,7 @@ function ReportCard({ item, colors }: { item: Report; colors: ReturnType<typeof 
 function ReportModal({
   visible, onClose, onSuccess, colors,
 }: {
-  visible: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
+  visible: boolean; onClose: () => void; onSuccess: () => void;
   colors: ReturnType<typeof useColors>;
 }) {
   const [form, setForm] = useState({
@@ -189,18 +241,13 @@ function ReportModal({
   const [submitting, setSubmitting] = useState(false);
   const insets = useSafeAreaInsets();
 
-  function update(key: string, val: string) {
-    setForm((f) => ({ ...f, [key]: val }));
-  }
+  function update(key: string, val: string) { setForm((f) => ({ ...f, [key]: val })); }
 
   async function captureGPS() {
     setLocating(true);
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Permission denied", "Location access is needed to auto-fill coordinates.");
-        return;
-      }
+      if (status !== "granted") { Alert.alert("Permission denied", "Location access is needed."); return; }
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       const lat = loc.coords.latitude;
       const lng = loc.coords.longitude;
@@ -209,130 +256,88 @@ function ReportModal({
       const geo = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
       if (geo.length > 0) {
         const g = geo[0];
-        const addr = [g.name, g.street, g.district, g.city].filter(Boolean).join(", ");
-        update("address", addr || `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+        update("address", [g.name, g.street, g.district, g.city].filter(Boolean).join(", ") || `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
       }
-    } catch {
-      Alert.alert("Error", "Could not get location. Please enter manually.");
-    } finally {
-      setLocating(false);
-    }
+    } catch { Alert.alert("Error", "Could not get location."); }
+    finally { setLocating(false); }
   }
 
   async function handleSubmit() {
-    if (!form.title.trim() || !form.address.trim()) {
-      Alert.alert("Missing fields", "Please fill in the title and location.");
-      return;
-    }
+    if (!form.title.trim() || !form.address.trim()) { Alert.alert("Missing fields", "Fill in title and location."); return; }
     setSubmitting(true);
-    const ok = await submitReport({
-      title: form.title,
-      category: form.category,
-      description: form.description || "No description provided.",
-      severity: form.severity,
-      latitude: form.latitude ? parseFloat(form.latitude) : null,
-      longitude: form.longitude ? parseFloat(form.longitude) : null,
-      address: form.address,
-    });
-    setSubmitting(false);
-    if (ok) {
-      setForm({ title: "", category: "pothole", description: "", severity: "medium", latitude: "", longitude: "", address: "" });
-      onSuccess();
-    } else {
-      Alert.alert("Error", "Could not submit report. Please try again.");
-    }
+    try {
+      const res = await fetch(`${BASE_URL}/api/reports`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: form.title, category: form.category,
+          description: form.description || "No description provided.",
+          severity: form.severity,
+          latitude: form.latitude ? parseFloat(form.latitude) : null,
+          longitude: form.longitude ? parseFloat(form.longitude) : null,
+          address: form.address,
+        }),
+      });
+      if (res.ok) {
+        setForm({ title: "", category: "pothole", description: "", severity: "medium", latitude: "", longitude: "", address: "" });
+        onSuccess();
+      } else Alert.alert("Error", "Could not submit. Try again.");
+    } catch { Alert.alert("Error", "Network error."); }
+    finally { setSubmitting(false); }
   }
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[styles.modalContainer, { backgroundColor: colors.background, paddingBottom: insets.bottom + 16 }]}>
-        {/* Modal Header */}
         <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
           <Text style={[styles.modalTitle, { color: colors.foreground }]}>Report an Issue</Text>
-          <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
-            <Feather name="x" size={22} color={colors.mutedForeground} />
-          </TouchableOpacity>
+          <TouchableOpacity onPress={onClose}><Feather name="x" size={22} color={colors.mutedForeground} /></TouchableOpacity>
         </View>
-
-        <ScrollView style={styles.modalBody} keyboardShouldPersistTaps="handled">
-          {/* Title */}
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.modalBody} keyboardShouldPersistTaps="handled">
           <Text style={[styles.label, { color: colors.mutedForeground }]}>Issue Title *</Text>
           <TextInput
-            value={form.title}
-            onChangeText={(v) => update("title", v)}
-            placeholder="e.g. Large pothole on MG Road"
-            placeholderTextColor={colors.mutedForeground}
+            value={form.title} onChangeText={(v) => update("title", v)}
+            placeholder="e.g. Large pothole on MG Road" placeholderTextColor={colors.mutedForeground}
             style={[styles.input, { backgroundColor: colors.muted, color: colors.foreground, borderColor: colors.border }]}
           />
-
-          {/* Category */}
           <Text style={[styles.label, { color: colors.mutedForeground }]}>Category</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
-            {CATEGORIES.slice(1).map((c) => {
-              const active = form.category === c.value;
-              const col = CATEGORY_COLORS[c.value] ?? "#9ca3af";
-              return (
-                <TouchableOpacity
-                  key={c.value}
-                  onPress={() => update("category", c.value)}
-                  style={[styles.chip, {
-                    backgroundColor: active ? col : colors.muted,
-                    borderColor: active ? col : colors.border,
-                  }]}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[styles.chipText, { color: active ? "#fff" : colors.mutedForeground }]}>
-                    {c.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={{ flexDirection: "row", gap: 7 }}>
+              {CATEGORIES.map((c) => {
+                const active = form.category === c.value;
+                const col = CATEGORY_COLORS[c.value] ?? "#9ca3af";
+                return (
+                  <TouchableOpacity key={c.value} onPress={() => update("category", c.value)}
+                    style={[styles.chip, { backgroundColor: active ? col : colors.muted, borderColor: active ? col : colors.border }]}>
+                    <Text style={[styles.chipText, { color: active ? "#fff" : colors.mutedForeground }]}>{c.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </ScrollView>
-
-          {/* Severity */}
           <Text style={[styles.label, { color: colors.mutedForeground }]}>Severity</Text>
-          <View style={styles.sevRow}>
+          <View style={{ flexDirection: "row", gap: 7 }}>
             {SEVERITIES.map((s) => {
               const active = form.severity === s.value;
               const col = SEVERITY_COLORS[s.value];
               return (
-                <TouchableOpacity
-                  key={s.value}
-                  onPress={() => update("severity", s.value)}
-                  style={[styles.sevBtn, {
-                    flex: 1,
-                    backgroundColor: active ? col : colors.muted,
-                    borderColor: active ? col : colors.border,
-                  }]}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[styles.chipText, { color: active ? "#fff" : colors.mutedForeground }]}>
-                    {s.label}
-                  </Text>
+                <TouchableOpacity key={s.value} onPress={() => update("severity", s.value)}
+                  style={[styles.sevBtn, { flex: 1, backgroundColor: active ? col : colors.muted, borderColor: active ? col : colors.border }]}>
+                  <Text style={[styles.chipText, { color: active ? "#fff" : colors.mutedForeground }]}>{s.label}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
-
-          {/* Location */}
           <Text style={[styles.label, { color: colors.mutedForeground }]}>Location *</Text>
-          <View style={styles.locRow}>
+          <View style={{ flexDirection: "row", gap: 8 }}>
             <TextInput
-              value={form.address}
-              onChangeText={(v) => update("address", v)}
-              placeholder="Address or landmark"
-              placeholderTextColor={colors.mutedForeground}
-              style={[styles.input, styles.locInput, { backgroundColor: colors.muted, color: colors.foreground, borderColor: colors.border }]}
+              value={form.address} onChangeText={(v) => update("address", v)}
+              placeholder="Address or landmark" placeholderTextColor={colors.mutedForeground}
+              style={[styles.input, { flex: 1, backgroundColor: colors.muted, color: colors.foreground, borderColor: colors.border }]}
             />
-            <TouchableOpacity
-              onPress={captureGPS}
-              disabled={locating}
-              style={[styles.gpsBtn, { backgroundColor: colors.primary }]}
-              activeOpacity={0.8}
-            >
-              {locating
-                ? <ActivityIndicator size="small" color="#fff" />
-                : <Feather name="crosshair" size={16} color="#fff" />}
+            <TouchableOpacity onPress={captureGPS} disabled={locating}
+              style={[styles.gpsBtn, { backgroundColor: colors.primary }]}>
+              {locating ? <ActivityIndicator size="small" color="#fff" /> : <Feather name="crosshair" size={16} color="#fff" />}
             </TouchableOpacity>
           </View>
           {form.latitude ? (
@@ -340,32 +345,17 @@ function ReportModal({
               📍 {parseFloat(form.latitude).toFixed(5)}, {parseFloat(form.longitude).toFixed(5)}
             </Text>
           ) : null}
-
-          {/* Description */}
           <Text style={[styles.label, { color: colors.mutedForeground }]}>Description</Text>
           <TextInput
-            value={form.description}
-            onChangeText={(v) => update("description", v)}
-            placeholder="Describe the issue in detail…"
-            placeholderTextColor={colors.mutedForeground}
-            multiline
-            numberOfLines={3}
+            value={form.description} onChangeText={(v) => update("description", v)}
+            placeholder="Describe the issue…" placeholderTextColor={colors.mutedForeground}
+            multiline numberOfLines={3}
             style={[styles.input, styles.textArea, { backgroundColor: colors.muted, color: colors.foreground, borderColor: colors.border }]}
           />
-
-          {/* Submit */}
-          <TouchableOpacity
-            onPress={handleSubmit}
-            disabled={submitting}
-            style={[styles.submitBtn, { backgroundColor: colors.primary, opacity: submitting ? 0.6 : 1 }]}
-            activeOpacity={0.85}
-          >
-            {submitting
-              ? <ActivityIndicator size="small" color="#fff" />
-              : <Feather name="send" size={16} color="#fff" />}
-            <Text style={styles.submitBtnText}>
-              {submitting ? "Submitting…" : "Submit Report"}
-            </Text>
+          <TouchableOpacity onPress={handleSubmit} disabled={submitting}
+            style={[styles.submitBtn, { backgroundColor: colors.primary, opacity: submitting ? 0.6 : 1 }]}>
+            {submitting ? <ActivityIndicator size="small" color="#fff" /> : <Feather name="send" size={16} color="#fff" />}
+            <Text style={styles.submitBtnText}>{submitting ? "Submitting…" : "Submit Report"}</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -378,224 +368,118 @@ function ReportModal({
 export default function MapScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
-  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
+  const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   const [reports, setReports] = useState<Report[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [filterCat, setFilterCat] = useState("all");
-  const [showFormModal, setShowFormModal] = useState(false);
+  const [mapHtml, setMapHtml] = useState<string>("");
+  const [showForm, setShowForm] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const load = useCallback(async () => {
-    const data = await fetchReports();
-    setReports(data);
-    setLoading(false);
-  }, []);
-
-  const refresh = useCallback(async () => {
-    setRefreshing(true);
-    await load();
-    setRefreshing(false);
-  }, [load]);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    load();
-    intervalRef.current = setInterval(load, 30_000);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [load]);
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 0.3, duration: 900, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [pulseAnim]);
 
-  const filtered = filterCat === "all"
-    ? reports
-    : reports.filter((r) => r.category === filterCat);
+  const loadReports = useCallback(async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/api/reports?limit=150`, { credentials: "include" });
+      if (!res.ok) {
+        if (!mapHtml) setMapHtml(buildMapHtml([]));
+        return;
+      }
+      const data = await res.json();
+      const list: Report[] = data.reports ?? [];
+      setReports(list);
+      setMapHtml(buildMapHtml(list));
+    } catch {
+      if (!mapHtml) setMapHtml(buildMapHtml([]));
+    }
+  }, [mapHtml]);
 
-  const highPriority = reports.filter((r) => r.severity === "critical" || r.severity === "high");
+  useEffect(() => {
+    loadReports();
+    const id = setInterval(loadReports, 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   function handleSuccess() {
-    setShowFormModal(false);
+    setShowForm(false);
     setShowSuccess(true);
-    setTimeout(() => { setShowSuccess(false); load(); }, 2500);
+    setTimeout(() => { setShowSuccess(false); loadReports(); }, 3000);
   }
 
-  const ListHeader = (
-    <View>
-      {/* Success Banner */}
-      {showSuccess && (
-        <View style={[styles.successBanner, { backgroundColor: "#22c55e18", borderColor: "#22c55e44" }]}>
-          <Feather name="check-circle" size={14} color="#22c55e" />
-          <Text style={[styles.successText, { color: "#22c55e" }]}>
-            Issue reported! It'll appear on the map shortly.
-          </Text>
-        </View>
-      )}
-
-      {/* Category filter */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterRow}
-      >
-        {CATEGORIES.map((c) => {
-          const active = filterCat === c.value;
-          const col = c.value === "all" ? colors.primary : (CATEGORY_COLORS[c.value] ?? colors.primary);
-          return (
-            <TouchableOpacity
-              key={c.value}
-              onPress={() => setFilterCat(c.value)}
-              style={[styles.filterChip, {
-                backgroundColor: active ? col : colors.muted,
-                borderColor: active ? col : colors.border,
-              }]}
-              activeOpacity={0.75}
-            >
-              {c.value !== "all" && (
-                <View style={[styles.filterDot, { backgroundColor: active ? "#fff" : CATEGORY_COLORS[c.value] ?? "#9ca3af" }]} />
-              )}
-              <Text style={[styles.filterChipText, { color: active ? "#fff" : colors.mutedForeground }]}>
-                {c.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-
-      {/* High Priority Section */}
-      {highPriority.length > 0 && filterCat === "all" && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Feather name="alert-triangle" size={14} color="#ef4444" />
-            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>High Priority</Text>
-            <View style={[styles.countBadge, { backgroundColor: "#ef444422" }]}>
-              <Text style={[styles.countBadgeText, { color: "#ef4444" }]}>{highPriority.length}</Text>
-            </View>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {highPriority.slice(0, 6).map((r) => {
-              const col = CATEGORY_COLORS[r.category] ?? "#9ca3af";
-              const sev = SEVERITY_COLORS[r.severity] ?? "#6b7280";
-              return (
-                <TouchableOpacity
-                  key={r.id}
-                  style={[styles.priorityCard, { backgroundColor: colors.card, borderColor: sev + "55", borderLeftColor: sev }]}
-                  activeOpacity={0.8}
-                  onPress={() => r.latitude && r.longitude && openInMaps(r.latitude, r.longitude, r.title)}
-                >
-                  <View style={styles.priorityCardHeader}>
-                    <View style={[styles.catDot, { backgroundColor: col }]} />
-                    <Text style={[styles.priorityTitle, { color: colors.foreground }]} numberOfLines={2}>
-                      {r.title}
-                    </Text>
-                  </View>
-                  <Text style={[styles.priorityAddr, { color: colors.mutedForeground }]} numberOfLines={1}>
-                    {r.address.split(",")[0]}
-                  </Text>
-                  <View style={styles.priorityFooter}>
-                    <Text style={[styles.prioritySev, { color: sev }]}>{r.severity}</Text>
-                    {r.latitude && r.longitude && (
-                      <View style={[styles.navBadge, { backgroundColor: colors.primary + "18" }]}>
-                        <Feather name="navigation" size={10} color={colors.primary} />
-                        <Text style={[styles.navBadgeText, { color: colors.primary }]}>Navigate</Text>
-                      </View>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-      )}
-
-      {/* All Reports header */}
-      <View style={[styles.sectionHeader, { paddingHorizontal: 16, marginTop: 12, marginBottom: 4 }]}>
-        <Feather name="map-pin" size={14} color={colors.primary} />
-        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-          {filterCat === "all" ? "All Reports" : CATEGORIES.find((c) => c.value === filterCat)?.label}
-        </Text>
-        <Text style={[styles.countBadgeText, { color: colors.mutedForeground, marginLeft: 4 }]}>
-          ({filtered.length})
-        </Text>
-      </View>
-    </View>
-  );
+  const highCount = reports.filter((r) => r.severity === "critical" || r.severity === "high").length;
 
   return (
-    <View style={[styles.flex, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: topPad + 12, borderBottomColor: colors.border }]}>
-        <View style={styles.headerRow}>
-          <View>
-            <Text style={[styles.title, { color: colors.foreground }]}>Live Map</Text>
-            <View style={styles.liveRow}>
-              <View style={styles.liveDot} />
-              <Text style={[styles.liveText, { color: colors.mutedForeground }]}>
-                {reports.length} reports · live
-              </Text>
-            </View>
-          </View>
-          <TouchableOpacity
-            style={[styles.reportBtn, { backgroundColor: colors.primary }]}
-            onPress={() => setShowFormModal(true)}
-            activeOpacity={0.8}
-          >
-            <Feather name="plus" size={16} color="#fff" />
-            <Text style={styles.reportBtnText}>Report</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+    <View style={[styles.container, { backgroundColor: "#0f172a" }]}>
 
-      {/* Legend row */}
-      <View style={[styles.legendRow, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        {Object.entries(CATEGORY_COLORS).slice(0, 5).map(([cat, col]) => (
-          <View key={cat} style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: col }]} />
-            <Text style={[styles.legendText, { color: colors.mutedForeground }]}>
-              {cat.replace("_", " ")}
-            </Text>
-          </View>
-        ))}
-      </View>
-
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>Loading reports…</Text>
-        </View>
+      {/* Map fills the entire screen */}
+      {mapHtml ? (
+        <MapView html={mapHtml} />
       ) : (
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => String(item.id)}
-          renderItem={({ item }) => (
-            <View style={styles.cardWrapper}>
-              <ReportCard item={item} colors={colors} />
-            </View>
-          )}
-          ListHeaderComponent={ListHeader}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Feather name="map" size={40} color={colors.mutedForeground} />
-              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                No reports yet in this category
-              </Text>
-            </View>
-          }
-          contentContainerStyle={{ paddingBottom: bottomPad + 24 }}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={refresh}
-              tintColor={colors.primary}
-            />
-          }
-          showsVerticalScrollIndicator={false}
-        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#3b82f6" />
+          <Text style={styles.loadingText}>Loading map…</Text>
+        </View>
       )}
 
-      {/* Report Modal */}
+      {/* Floating header overlay */}
+      <View style={[styles.header, { top: topPad + 8 }]}>
+        <View style={styles.headerInner}>
+          <View style={styles.titleRow}>
+            <Animated.View style={[styles.liveDot, { opacity: pulseAnim }]} />
+            <Text style={styles.headerTitle}>Live Road Map</Text>
+            <Text style={styles.headerSub}>{reports.length} reports</Text>
+          </View>
+          {highCount > 0 && (
+            <View style={styles.alertBadge}>
+              <Feather name="alert-triangle" size={11} color="#ef4444" />
+              <Text style={styles.alertBadgeText}>{highCount} critical</Text>
+            </View>
+          )}
+        </View>
+      </View>
+
+      {/* Success toast */}
+      {showSuccess && (
+        <View style={styles.successToast}>
+          <Feather name="check-circle" size={14} color="#22c55e" />
+          <Text style={styles.successText}>Report submitted! Appears on map shortly.</Text>
+        </View>
+      )}
+
+      {/* Category legend strip */}
+      <View style={[styles.legend, { bottom: Platform.OS === "web" ? 56 : insets.bottom + 49 }]}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.legendRow}>
+            {Object.entries(CATEGORY_COLORS).map(([cat, col]) => (
+              <View key={cat} style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: col }]} />
+                <Text style={styles.legendLabel}>{cat.replace("_", " ")}</Text>
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+      </View>
+
+      {/* FAB — Report Issue */}
+      <TouchableOpacity
+        style={[styles.fab, { bottom: (Platform.OS === "web" ? 56 : insets.bottom + 49) + 58 }]}
+        onPress={() => setShowForm(true)}
+        activeOpacity={0.88}
+      >
+        <Feather name="plus" size={20} color="#fff" />
+        <Text style={styles.fabText}>Report Issue</Text>
+      </TouchableOpacity>
+
       <ReportModal
-        visible={showFormModal}
-        onClose={() => setShowFormModal(false)}
+        visible={showForm}
+        onClose={() => setShowForm(false)}
         onSuccess={handleSuccess}
         colors={colors}
       />
@@ -606,188 +490,73 @@ export default function MapScreen() {
 /* ─── Styles ──────────────────────────────────────────────────────── */
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
+  container: { flex: 1 },
   header: {
-    borderBottomWidth: 1,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    position: "absolute", left: 12, right: 12, zIndex: 10,
   },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+  headerInner: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    backgroundColor: "rgba(15,23,42,0.88)",
+    borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10,
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.09)",
   },
-  title: { fontSize: 22, fontWeight: "700", letterSpacing: -0.4 },
-  liveRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 2 },
-  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#22c55e" },
-  liveText: { fontSize: 11 },
-  reportBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 7 },
+  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#22c55e" },
+  headerTitle: { color: "#f1f5f9", fontWeight: "700", fontSize: 15 },
+  headerSub: { color: "#64748b", fontSize: 12 },
+  alertBadge: {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    backgroundColor: "#ef444418", borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4,
+    borderWidth: 1, borderColor: "#ef444433",
   },
-  reportBtnText: { color: "#fff", fontWeight: "600", fontSize: 13 },
-  legendRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-around",
-    paddingVertical: 7,
-    borderBottomWidth: 1,
+  alertBadgeText: { color: "#ef4444", fontSize: 11, fontWeight: "600" },
+  loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, backgroundColor: "#0f172a" },
+  loadingText: { color: "#94a3b8", fontSize: 14 },
+  successToast: {
+    position: "absolute", top: 110, left: 16, right: 16,
+    flexDirection: "row", alignItems: "center", gap: 8,
+    backgroundColor: "#0f172a", borderRadius: 12, padding: 12,
+    borderWidth: 1, borderColor: "#22c55e44", zIndex: 20,
   },
+  successText: { color: "#22c55e", fontSize: 12, fontWeight: "500", flex: 1 },
+  legend: {
+    position: "absolute", left: 0, right: 0,
+    backgroundColor: "rgba(15,23,42,0.92)",
+    borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.07)",
+    paddingVertical: 8, zIndex: 10,
+  },
+  legendRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, gap: 12 },
   legendItem: { flexDirection: "row", alignItems: "center", gap: 4 },
   legendDot: { width: 7, height: 7, borderRadius: 4 },
-  legendText: { fontSize: 9, textTransform: "capitalize" },
-  filterRow: { paddingHorizontal: 12, paddingVertical: 10, gap: 7 },
-  filterChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
+  legendLabel: { color: "#64748b", fontSize: 9, textTransform: "capitalize" },
+  fab: {
+    position: "absolute", right: 16, zIndex: 20,
+    flexDirection: "row", alignItems: "center", gap: 8,
+    backgroundColor: "#3b82f6", borderRadius: 28,
+    paddingHorizontal: 18, paddingVertical: 13,
+    shadowColor: "#3b82f6", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.55, shadowRadius: 14, elevation: 8,
   },
-  filterDot: { width: 6, height: 6, borderRadius: 3 },
-  filterChipText: { fontSize: 12, fontWeight: "500" },
-  section: { marginBottom: 4 },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 16,
-    marginBottom: 10,
-  },
-  sectionTitle: { fontSize: 14, fontWeight: "600" },
-  countBadge: {
-    borderRadius: 10,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-  },
-  countBadgeText: { fontSize: 11, fontWeight: "700" },
-  priorityCard: {
-    width: 170,
-    marginLeft: 12,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderLeftWidth: 3,
-  },
-  priorityCardHeader: { flexDirection: "row", alignItems: "flex-start", gap: 6, marginBottom: 4 },
-  priorityTitle: { flex: 1, fontSize: 12, fontWeight: "600", lineHeight: 16 },
-  priorityAddr: { fontSize: 10, marginBottom: 8 },
-  priorityFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  prioritySev: { fontSize: 11, fontWeight: "700", textTransform: "capitalize" },
-  navBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  navBadgeText: { fontSize: 9, fontWeight: "600" },
-  cardWrapper: { paddingHorizontal: 12, marginBottom: 8 },
-  card: {
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 12,
-  },
-  cardHeader: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginBottom: 8 },
-  catDot: { width: 10, height: 10, borderRadius: 5, marginTop: 3, flexShrink: 0 },
-  cardTitleWrap: { flex: 1 },
-  cardTitle: { fontSize: 13, fontWeight: "600", marginBottom: 2 },
-  cardAddress: { fontSize: 11 },
-  navBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cardBadges: { flexDirection: "row", flexWrap: "wrap", gap: 5, marginBottom: 8 },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  badgeText: { fontSize: 10, fontWeight: "600", textTransform: "capitalize" },
-  cardFooter: { flexDirection: "row", justifyContent: "space-between" },
-  cardMeta: { fontSize: 10 },
-  loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
-  loadingText: { fontSize: 14 },
-  emptyContainer: { alignItems: "center", paddingTop: 60, gap: 12 },
-  emptyText: { fontSize: 14 },
-  successBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginHorizontal: 12,
-    marginTop: 4,
-    marginBottom: 4,
-    padding: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  successText: { fontSize: 12, fontWeight: "500", flex: 1 },
+  fabText: { color: "#fff", fontWeight: "700", fontSize: 14 },
   // Modal
   modalContainer: { flex: 1 },
   modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1,
   },
   modalTitle: { fontSize: 17, fontWeight: "700" },
-  modalBody: { paddingHorizontal: 20 },
+  modalBody: { padding: 20, paddingBottom: 40 },
   label: { fontSize: 12, fontWeight: "500", marginTop: 16, marginBottom: 6 },
-  input: {
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-  },
+  input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14 },
   textArea: { height: 80, textAlignVertical: "top", paddingTop: 10 },
-  chipRow: { flexDirection: "row" as const },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 1,
-    marginRight: 7,
-  },
+  chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   chipText: { fontSize: 12, fontWeight: "500" },
-  sevRow: { flexDirection: "row", gap: 7 },
-  sevBtn: {
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    alignItems: "center",
-  },
-  locRow: { flexDirection: "row", gap: 8 },
-  locInput: { flex: 1 },
-  gpsBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  sevBtn: { paddingVertical: 8, borderRadius: 10, borderWidth: 1, alignItems: "center" },
+  gpsBtn: { width: 44, height: 44, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   gpsCoords: { fontSize: 10, marginTop: 4 },
   submitBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 14,
-    marginTop: 24,
-    marginBottom: 8,
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+    paddingVertical: 14, borderRadius: 14, marginTop: 24, marginBottom: 8,
   },
   submitBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
 });
