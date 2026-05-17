@@ -23,13 +23,13 @@ function NativeTabLayout() {
         <Icon sf={{ default: "doc.text", selected: "doc.text.fill" }} />
         <Label>Reports</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="map">
+        <Icon sf={{ default: "map", selected: "map.fill" }} />
+        <Label>Map</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="emergency">
         <Icon sf={{ default: "sos", selected: "sos" }} />
         <Label>Emergency</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="transparency">
-        <Icon sf={{ default: "chart.bar", selected: "chart.bar.fill" }} />
-        <Label>Transparency</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
         <Icon sf={{ default: "person", selected: "person.fill" }} />
@@ -103,6 +103,18 @@ function ClassicTabLayout() {
               <SymbolView name="doc.text" tintColor={color} size={24} />
             ) : (
               <Feather name="file-text" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="map"
+        options={{
+          title: "Map",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="map" tintColor={color} size={24} />
+            ) : (
+              <Feather name="map" size={22} color={color} />
             ),
         }}
       />
