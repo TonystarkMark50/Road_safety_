@@ -1,10 +1,14 @@
 import { Feather } from "@expo/vector-icons";
 import * as Location from "expo-location";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  forwardRef, useCallback, useEffect, useImperativeHandle,
+  useRef, useState,
+} from "react";
 import {
   ActivityIndicator,
   Alert,
   Animated,
+  Keyboard,
   Modal,
   Platform,
   ScrollView,
@@ -18,7 +22,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
 
-/* ─── Types & Constants ───────────────────────────────────────────── */
+/* ─── Types ───────────────────────────────────────────────────────── */
 
 type Report = {
   id: number; ticketId: string; title: string; category: string;
@@ -26,6 +30,12 @@ type Report = {
   longitude: number | null; address: string; severity: string;
   upvotes: number; createdAt: string; userName?: string;
 };
+
+type GeoResult = { label: string; lat: number; lng: number };
+
+type MapViewHandle = { flyTo: (lat: number, lng: number) => void };
+
+/* ─── Constants ───────────────────────────────────────────────────── */
 
 const CATEGORY_COLORS: Record<string, string> = {
   accident:        "#ef4444",
@@ -62,7 +72,7 @@ const SEVERITY_COLORS: Record<string, string> = {
 
 const BASE_URL = `https://${process.env.EXPO_PUBLIC_DOMAIN ?? ""}`;
 
-/* ─── Leaflet HTML Builder ────────────────────────────────────────── */
+/* ─── Leaflet HTML ────────────────────────────────────────────────── */
 
 function buildMapHtml(reports: Report[]): string {
   const safe = JSON.stringify(reports).replace(/<\/script>/gi, "<\\/script>");
@@ -86,10 +96,20 @@ function buildMapHtml(reports: Report[]): string {
   .leaflet-control-zoom a{background:#1e293b!important;color:#e2e8f0!important;border-color:#334155!important}
   .leaflet-control-attribution{background:rgba(15,23,42,.8)!important;color:#64748b!important;font-size:9px}
   .leaflet-control-attribution a{color:#94a3b8!important}
+  #fly-pin{
+    position:absolute;bottom:60px;left:50%;transform:translateX(-50%) translateY(0);
+    background:rgba(59,130,246,0.9);color:#fff;padding:6px 14px;border-radius:20px;
+    font-family:system-ui,sans-serif;font-size:12px;font-weight:600;
+    box-shadow:0 4px 16px rgba(59,130,246,0.5);
+    display:none;z-index:9999;pointer-events:none;
+    animation:flyIn 0.3s ease;
+  }
+  @keyframes flyIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 </style>
 </head>
 <body>
 <div id="map"></div>
+<div id="fly-pin"></div>
 <script>
 var CAT_COLORS=${JSON.stringify(CATEGORY_COLORS)};
 var reports=${safe};
@@ -104,8 +124,7 @@ function timeAgo(iso){
 function sevColor(s){return{critical:'#ef4444',high:'#f97316',medium:'#eab308',low:'#22c55e'}[s]||'#6b7280'}
 function sevRadius(s){return{critical:14,high:11,medium:9,low:7}[s]||9}
 function makeIcon(cat,sev){
-  var c=CAT_COLORS[cat]||'#9ca3af';
-  var r=sevRadius(sev);var d=r*2+4;
+  var c=CAT_COLORS[cat]||'#9ca3af';var r=sevRadius(sev);var d=r*2+4;
   return L.divIcon({
     className:'',
     html:'<svg xmlns="http://www.w3.org/2000/svg" width="'+d+'" height="'+d+'"><circle cx="'+(r+2)+'" cy="'+(r+2)+'" r="'+r+'" fill="'+c+'" fill-opacity=".92" stroke="#fff" stroke-width="2"/><\/svg>',
@@ -121,8 +140,7 @@ function renderReports(list){
   layers.clearLayers();
   list.forEach(function(r){
     if(!r.latitude||!r.longitude)return;
-    var c=CAT_COLORS[r.category]||'#9ca3af';
-    var sc=sevColor(r.severity);
+    var c=CAT_COLORS[r.category]||'#9ca3af';var sc=sevColor(r.severity);
     var m=L.marker([r.latitude,r.longitude],{icon:makeIcon(r.category,r.severity)});
     m.bindPopup(
       '<div style="min-width:185px;font-family:system-ui,sans-serif">'+
@@ -144,34 +162,37 @@ function renderReports(list){
 }
 renderReports(reports);
 window.updateReports=function(json){try{renderReports(JSON.parse(json));}catch(e){}};
+window.flyTo=function(lat,lng,label){
+  map.setView([lat,lng],15,{animate:true,duration:1.2,easeLinearity:0.1});
+  var pin=document.getElementById('fly-pin');
+  if(pin){
+    pin.style.display='block';
+    pin.textContent=label||'Location found';
+    clearTimeout(window._pinTimer);
+    window._pinTimer=setTimeout(function(){pin.style.display='none';},2500);
+  }
+  L.circleMarker([lat,lng],{radius:16,color:'#3b82f6',weight:2,fillColor:'#3b82f6',fillOpacity:0.25}).addTo(map);
+};
 <\/script>
 </body>
 </html>`;
 }
 
-/* ─── Platform-specific map renderer ─────────────────────────────── */
+/* ─── Platform-specific Map Views ────────────────────────────────── */
 
-function NativeMapView({ html }: { html: string }) {
+const NativeMapView = forwardRef<MapViewHandle, { html: string }>(function NativeMapView({ html }, ref) {
   const WebView = require("react-native-webview").WebView;
-  const ref = useRef<any>(null);
-  const prevHtmlRef = useRef<string>("");
+  const wvRef = useRef<any>(null);
 
-  useEffect(() => {
-    if (!html || !ref.current) return;
-    if (prevHtmlRef.current && prevHtmlRef.current !== html) {
-      const escaped = JSON.stringify(JSON.parse(
-        html.match(/var reports=(.+?);function/s)?.[1] ?? "[]"
-      )).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-      ref.current.injectJavaScript?.(`window.updateReports('${escaped}');true;`);
-      prevHtmlRef.current = html;
-      return;
-    }
-    prevHtmlRef.current = html;
-  }, [html]);
+  useImperativeHandle(ref, () => ({
+    flyTo(lat, lng) {
+      wvRef.current?.injectJavaScript?.(`window.flyTo(${lat},${lng});true;`);
+    },
+  }));
 
   return (
     <WebView
-      ref={ref}
+      ref={wvRef}
       source={{ html }}
       style={{ flex: 1 }}
       originWhitelist={["*"]}
@@ -182,16 +203,22 @@ function NativeMapView({ html }: { html: string }) {
       onError={() => {}}
     />
   );
-}
+});
 
-function WebMapView({ html }: { html: string }) {
+const WebMapView = forwardRef<MapViewHandle, { html: string }>(function WebMapView({ html }, ref) {
   const containerRef = useRef<any>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    flyTo(lat, lng) {
+      const cw = iframeRef.current?.contentWindow as any;
+      cw?.flyTo?.(lat, lng);
+    },
+  }));
 
   useEffect(() => {
     if (!html || !containerRef.current) return;
     const container = containerRef.current as HTMLDivElement;
-
     if (!iframeRef.current) {
       const iframe = document.createElement("iframe");
       Object.assign(iframe.style, {
@@ -201,7 +228,6 @@ function WebMapView({ html }: { html: string }) {
       container.appendChild(iframe);
       iframeRef.current = iframe;
     }
-
     const iframe = iframeRef.current;
     if (iframe.contentDocument) {
       iframe.contentDocument.open();
@@ -218,12 +244,169 @@ function WebMapView({ html }: { html: string }) {
       style={{ flex: 1, width: "100%", height: "100%", position: "relative" } as React.CSSProperties}
     />
   );
+});
+
+const MapView = forwardRef<MapViewHandle, { html: string }>(function MapView({ html }, ref) {
+  if (Platform.OS === "web") return <WebMapView ref={ref} html={html} />;
+  return <NativeMapView ref={ref} html={html} />;
+});
+
+/* ─── Search Bar ──────────────────────────────────────────────────── */
+
+function MapSearchBar({
+  mapRef, topOffset,
+}: {
+  mapRef: React.RefObject<MapViewHandle | null>;
+  topOffset: number;
+}) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<GeoResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef<TextInput>(null);
+
+  async function doSearch(q: string) {
+    if (!q.trim()) { setResults([]); return; }
+    setSearching(true);
+    try {
+      const res = await fetch(`${BASE_URL}/api/map/geocode?q=${encodeURIComponent(q)}`, { credentials: "include" });
+      const data = await res.json();
+      setResults(
+        (data.features ?? []).slice(0, 5).map((f: {
+          properties: { label: string };
+          geometry: { coordinates: [number, number] };
+        }) => ({
+          label: f.properties.label,
+          lat: f.geometry.coordinates[1],
+          lng: f.geometry.coordinates[0],
+        }))
+      );
+    } catch { setResults([]); }
+    finally { setSearching(false); }
+  }
+
+  function onChangeText(text: string) {
+    setQuery(text);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!text.trim()) { setResults([]); return; }
+    debounceRef.current = setTimeout(() => doSearch(text), 420);
+  }
+
+  function onSelect(r: GeoResult) {
+    setQuery(r.label);
+    setResults([]);
+    setFocused(false);
+    Keyboard.dismiss();
+    mapRef.current?.flyTo(r.lat, r.lng);
+  }
+
+  function onClear() {
+    setQuery("");
+    setResults([]);
+    inputRef.current?.focus();
+  }
+
+  const showDropdown = focused && (results.length > 0 || searching);
+
+  return (
+    <View style={[ss.searchWrap, { top: topOffset }]}>
+      {/* Input pill */}
+      <View style={[ss.searchPill, focused && ss.searchPillFocused]}>
+        <Feather name="search" size={16} color={focused ? "#3b82f6" : "#64748b"} />
+        <TextInput
+          ref={inputRef}
+          value={query}
+          onChangeText={onChangeText}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setTimeout(() => setFocused(false), 150)}
+          placeholder="Search location…"
+          placeholderTextColor="#475569"
+          returnKeyType="search"
+          onSubmitEditing={() => doSearch(query)}
+          style={ss.searchInput}
+        />
+        {searching
+          ? <ActivityIndicator size="small" color="#3b82f6" style={{ width: 18 }} />
+          : query.length > 0
+            ? <TouchableOpacity onPress={onClear} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Feather name="x-circle" size={15} color="#64748b" />
+              </TouchableOpacity>
+            : <Feather name="map-pin" size={14} color="#334155" />
+        }
+      </View>
+
+      {/* Dropdown */}
+      {showDropdown && (
+        <View style={ss.dropdown}>
+          {searching && results.length === 0 && (
+            <View style={ss.dropdownRow}>
+              <ActivityIndicator size="small" color="#3b82f6" />
+              <Text style={ss.dropdownSearching}>Searching…</Text>
+            </View>
+          )}
+          {results.map((r, i) => (
+            <TouchableOpacity
+              key={i}
+              onPress={() => onSelect(r)}
+              style={[ss.dropdownRow, i > 0 && ss.dropdownDivider]}
+              activeOpacity={0.7}
+            >
+              <View style={ss.dropdownPin}>
+                <Feather name="map-pin" size={12} color="#3b82f6" />
+              </View>
+              <Text style={ss.dropdownLabel} numberOfLines={2}>{r.label}</Text>
+              <Feather name="arrow-up-left" size={12} color="#334155" />
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </View>
+  );
 }
 
-function MapView({ html }: { html: string }) {
-  if (Platform.OS === "web") return <WebMapView html={html} />;
-  return <NativeMapView html={html} />;
-}
+const ss = StyleSheet.create({
+  searchWrap: {
+    position: "absolute", left: 12, right: 12, zIndex: 30,
+  },
+  searchPill: {
+    flexDirection: "row", alignItems: "center", gap: 9,
+    backgroundColor: "rgba(15,23,42,0.95)",
+    borderRadius: 28, paddingHorizontal: 14, paddingVertical: 11,
+    borderWidth: 1.5, borderColor: "rgba(255,255,255,0.08)",
+    shadowColor: "#000", shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4, shadowRadius: 16, elevation: 10,
+  },
+  searchPillFocused: {
+    borderColor: "rgba(59,130,246,0.5)",
+    shadowColor: "#3b82f6", shadowOpacity: 0.25,
+  },
+  searchInput: {
+    flex: 1, fontSize: 14, color: "#e2e8f0",
+    paddingVertical: 0,
+  },
+  dropdown: {
+    marginTop: 6, backgroundColor: "rgba(15,23,42,0.97)",
+    borderRadius: 18, overflow: "hidden",
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.08)",
+    shadowColor: "#000", shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5, shadowRadius: 20, elevation: 12,
+  },
+  dropdownRow: {
+    flexDirection: "row", alignItems: "center", gap: 10,
+    paddingHorizontal: 14, paddingVertical: 12,
+  },
+  dropdownDivider: { borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.05)" },
+  dropdownPin: {
+    width: 26, height: 26, borderRadius: 13,
+    backgroundColor: "rgba(59,130,246,0.12)",
+    alignItems: "center", justifyContent: "center", flexShrink: 0,
+  },
+  dropdownLabel: {
+    flex: 1, fontSize: 13, color: "#cbd5e1", lineHeight: 18,
+  },
+  dropdownSearching: { fontSize: 13, color: "#64748b", marginLeft: 8 },
+});
 
 /* ─── Report Form Modal ───────────────────────────────────────────── */
 
@@ -249,10 +432,8 @@ function ReportModal({
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") { Alert.alert("Permission denied", "Location access is needed."); return; }
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-      const lat = loc.coords.latitude;
-      const lng = loc.coords.longitude;
-      update("latitude", lat.toFixed(6));
-      update("longitude", lng.toFixed(6));
+      const lat = loc.coords.latitude; const lng = loc.coords.longitude;
+      update("latitude", lat.toFixed(6)); update("longitude", lng.toFixed(6));
       const geo = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
       if (geo.length > 0) {
         const g = geo[0];
@@ -363,13 +544,14 @@ function ReportModal({
   );
 }
 
-/* ─── Main Map Screen ─────────────────────────────────────────────── */
+/* ─── Main Screen ─────────────────────────────────────────────────── */
 
 export default function MapScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 0 : insets.top;
 
+  const mapRef = useRef<MapViewHandle>(null);
   const [reports, setReports] = useState<Report[]>([]);
   const [mapHtml, setMapHtml] = useState<string>("");
   const [showForm, setShowForm] = useState(false);
@@ -388,17 +570,12 @@ export default function MapScreen() {
   const loadReports = useCallback(async () => {
     try {
       const res = await fetch(`${BASE_URL}/api/reports?limit=150`, { credentials: "include" });
-      if (!res.ok) {
-        if (!mapHtml) setMapHtml(buildMapHtml([]));
-        return;
-      }
+      if (!res.ok) { if (!mapHtml) setMapHtml(buildMapHtml([])); return; }
       const data = await res.json();
       const list: Report[] = data.reports ?? [];
       setReports(list);
       setMapHtml(buildMapHtml(list));
-    } catch {
-      if (!mapHtml) setMapHtml(buildMapHtml([]));
-    }
+    } catch { if (!mapHtml) setMapHtml(buildMapHtml([])); }
   }, [mapHtml]);
 
   useEffect(() => {
@@ -408,19 +585,19 @@ export default function MapScreen() {
   }, []);
 
   function handleSuccess() {
-    setShowForm(false);
-    setShowSuccess(true);
+    setShowForm(false); setShowSuccess(true);
     setTimeout(() => { setShowSuccess(false); loadReports(); }, 3000);
   }
 
   const highCount = reports.filter((r) => r.severity === "critical" || r.severity === "high").length;
+  const headerTop = topPad + 8;
+  const searchTop = headerTop + 58; // below header pill
 
   return (
     <View style={[styles.container, { backgroundColor: "#0f172a" }]}>
-
-      {/* Map fills the entire screen */}
+      {/* Full-screen map */}
       {mapHtml ? (
-        <MapView html={mapHtml} />
+        <MapView ref={mapRef} html={mapHtml} />
       ) : (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#3b82f6" />
@@ -428,8 +605,8 @@ export default function MapScreen() {
         </View>
       )}
 
-      {/* Floating header overlay */}
-      <View style={[styles.header, { top: topPad + 8 }]}>
+      {/* Header pill */}
+      <View style={[styles.header, { top: headerTop }]}>
         <View style={styles.headerInner}>
           <View style={styles.titleRow}>
             <Animated.View style={[styles.liveDot, { opacity: pulseAnim }]} />
@@ -445,6 +622,9 @@ export default function MapScreen() {
         </View>
       </View>
 
+      {/* Search bar — below header */}
+      <MapSearchBar mapRef={mapRef} topOffset={searchTop} />
+
       {/* Success toast */}
       {showSuccess && (
         <View style={styles.successToast}>
@@ -453,7 +633,7 @@ export default function MapScreen() {
         </View>
       )}
 
-      {/* Category legend strip */}
+      {/* Category legend */}
       <View style={[styles.legend, { bottom: Platform.OS === "web" ? 56 : insets.bottom + 49 }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View style={styles.legendRow}>
@@ -467,7 +647,7 @@ export default function MapScreen() {
         </ScrollView>
       </View>
 
-      {/* FAB — Report Issue */}
+      {/* FAB */}
       <TouchableOpacity
         style={[styles.fab, { bottom: (Platform.OS === "web" ? 56 : insets.bottom + 49) + 58 }]}
         onPress={() => setShowForm(true)}
@@ -477,12 +657,7 @@ export default function MapScreen() {
         <Text style={styles.fabText}>Report Issue</Text>
       </TouchableOpacity>
 
-      <ReportModal
-        visible={showForm}
-        onClose={() => setShowForm(false)}
-        onSuccess={handleSuccess}
-        colors={colors}
-      />
+      <ReportModal visible={showForm} onClose={() => setShowForm(false)} onSuccess={handleSuccess} colors={colors} />
     </View>
   );
 }
@@ -491,14 +666,14 @@ export default function MapScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    position: "absolute", left: 12, right: 12, zIndex: 10,
-  },
+  header: { position: "absolute", left: 12, right: 12, zIndex: 20 },
   headerInner: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    backgroundColor: "rgba(15,23,42,0.88)",
-    borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10,
+    backgroundColor: "rgba(15,23,42,0.92)", borderRadius: 16,
+    paddingHorizontal: 14, paddingVertical: 10,
     borderWidth: 1, borderColor: "rgba(255,255,255,0.09)",
+    shadowColor: "#000", shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35, shadowRadius: 12, elevation: 8,
   },
   titleRow: { flexDirection: "row", alignItems: "center", gap: 7 },
   liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#22c55e" },
@@ -513,7 +688,7 @@ const styles = StyleSheet.create({
   loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, backgroundColor: "#0f172a" },
   loadingText: { color: "#94a3b8", fontSize: 14 },
   successToast: {
-    position: "absolute", top: 110, left: 16, right: 16,
+    position: "absolute", top: 180, left: 16, right: 16,
     flexDirection: "row", alignItems: "center", gap: 8,
     backgroundColor: "#0f172a", borderRadius: 12, padding: 12,
     borderWidth: 1, borderColor: "#22c55e44", zIndex: 20,
@@ -538,7 +713,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.55, shadowRadius: 14, elevation: 8,
   },
   fabText: { color: "#fff", fontWeight: "700", fontSize: 14 },
-  // Modal
   modalContainer: { flex: 1 },
   modalHeader: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",

@@ -418,66 +418,132 @@ export default function MapView() {
 
       <div className="grid lg:grid-cols-3 gap-4">
         {/* Map */}
-        <div className="lg:col-span-2 rounded-xl border border-border bg-[#0f172a] overflow-hidden flex flex-col shadow-xl">
-          {/* Map toolbar */}
-          <div className="flex items-center gap-3 px-3 py-2.5 border-b border-border/60 bg-[#0f172a]">
-            <div className="relative flex-1">
-              <div className="flex items-center gap-2 border border-border/60 rounded-lg px-3 py-1.5 bg-white/5">
-                <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                <input
-                  value={search}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  placeholder="Search location…"
-                  className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none flex-1 min-w-0"
-                />
-                {search && (
-                  <button onClick={() => { setSearch(""); setSuggestions([]); }}>
-                    <X className="w-3.5 h-3.5 text-muted-foreground" />
-                  </button>
-                )}
-              </div>
-              {(suggestions.length > 0 || searching) && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-[#1e293b] border border-border/60 rounded-xl shadow-2xl z-[9999] overflow-hidden">
-                  {searching && <p className="text-xs text-muted-foreground px-3 py-2">Searching…</p>}
-                  {suggestions.map((s, i) => (
-                    <button key={i} onClick={() => selectSuggestion(s)}
-                      className="w-full text-left px-3 py-2 text-xs text-foreground hover:bg-white/5 flex items-center gap-2 transition-colors">
-                      <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
-                      <span className="truncate">{s.label}</span>
-                    </button>
-                  ))}
-                </div>
+        <div className="lg:col-span-2 rounded-xl border border-border bg-[#0f172a] overflow-hidden shadow-xl" style={{ position: "relative" }}>
+
+          {/* Map canvas — full height */}
+          <div ref={mapContainerRef} style={{ height: 540 }} />
+
+          {/* ── Floating search pill (Google Maps style) ── */}
+          <div style={{
+            position: "absolute", top: 14, left: 14, right: 14, zIndex: 9000,
+          }}>
+            <div style={{
+              display: "flex", alignItems: "center", gap: 10,
+              background: "rgba(15,23,42,0.95)",
+              backdropFilter: "blur(16px)",
+              WebkitBackdropFilter: "blur(16px)",
+              border: "1.5px solid rgba(255,255,255,0.1)",
+              borderRadius: 32, padding: "10px 16px",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3)",
+            }}>
+              <Search style={{ width: 16, height: 16, color: searching ? "#3b82f6" : "#64748b", flexShrink: 0 }} />
+              <input
+                value={search}
+                onChange={(e) => handleSearch(e.target.value)}
+                placeholder="Search any location on map…"
+                style={{
+                  flex: 1, background: "transparent", border: "none", outline: "none",
+                  fontSize: 14, color: "#e2e8f0", minWidth: 0,
+                }}
+                onFocus={(e) => {
+                  (e.currentTarget.parentElement as HTMLElement).style.borderColor = "rgba(59,130,246,0.5)";
+                  (e.currentTarget.parentElement as HTMLElement).style.boxShadow = "0 8px 32px rgba(0,0,0,0.5), 0 0 0 3px rgba(59,130,246,0.15)";
+                }}
+                onBlur={(e) => {
+                  (e.currentTarget.parentElement as HTMLElement).style.borderColor = "rgba(255,255,255,0.1)";
+                  (e.currentTarget.parentElement as HTMLElement).style.boxShadow = "0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3)";
+                }}
+              />
+              {searching && (
+                <div style={{ width: 16, height: 16, borderRadius: "50%", border: "2px solid #3b82f6", borderTopColor: "transparent", animation: "spin 0.7s linear infinite", flexShrink: 0 }} />
               )}
+              {search && !searching && (
+                <button
+                  onClick={() => { setSearch(""); setSuggestions([]); }}
+                  style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex", alignItems: "center" }}
+                >
+                  <X style={{ width: 14, height: 14, color: "#64748b" }} />
+                </button>
+              )}
+              {/* Divider + filter */}
+              <div style={{ width: 1, height: 18, background: "rgba(255,255,255,0.1)", flexShrink: 0, margin: "0 2px" }} />
+              <select
+                value={filterCat}
+                onChange={(e) => setFilterCat(e.target.value)}
+                style={{
+                  background: "transparent", border: "none", outline: "none",
+                  color: "#94a3b8", fontSize: 12, cursor: "pointer", flexShrink: 0,
+                }}
+              >
+                <option value="all" style={{ background: "#1e293b" }}>All</option>
+                {CATEGORIES.map((c) => <option key={c.value} value={c.value} style={{ background: "#1e293b" }}>{c.label}</option>)}
+              </select>
             </div>
 
-            {/* Category filter */}
-            <select
-              value={filterCat}
-              onChange={(e) => setFilterCat(e.target.value)}
-              className="border border-border/60 rounded-lg px-2 py-1.5 bg-white/5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="all">All types</option>
-              {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-            </select>
+            {/* Suggestions dropdown */}
+            {(suggestions.length > 0 || searching) && (
+              <div style={{
+                marginTop: 6,
+                background: "rgba(15,23,42,0.97)",
+                backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: 18, overflow: "hidden",
+                boxShadow: "0 16px 48px rgba(0,0,0,0.6)",
+              }}>
+                {searching && suggestions.length === 0 && (
+                  <p style={{ padding: "10px 16px", fontSize: 12, color: "#64748b", margin: 0 }}>Searching…</p>
+                )}
+                {suggestions.map((s, i) => (
+                  <button key={i} onClick={() => selectSuggestion(s)}
+                    style={{
+                      width: "100%", textAlign: "left", display: "flex", alignItems: "center",
+                      gap: 10, padding: "10px 16px",
+                      background: "transparent", border: "none",
+                      borderTop: i > 0 ? "1px solid rgba(255,255,255,0.05)" : "none",
+                      cursor: "pointer", transition: "background 0.12s",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.04)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  >
+                    <div style={{
+                      width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+                      background: "rgba(59,130,246,0.12)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <MapPin style={{ width: 13, height: 13, color: "#3b82f6" }} />
+                    </div>
+                    <span style={{ fontSize: 13, color: "#cbd5e1", flex: 1, lineHeight: 1.4 }}>{s.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Map canvas */}
-          <div ref={mapContainerRef} style={{ height: "500px" }} />
-
-          {/* Legend */}
-          <div className="px-4 py-3 border-t border-border/60 bg-[#0f172a]">
-            <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-              {Object.entries(CATEGORY_COLORS).map(([cat, color]) => (
-                <button
-                  key={cat}
-                  onClick={() => setFilterCat(filterCat === cat ? "all" : cat)}
-                  className={`flex items-center gap-1.5 transition-opacity ${filterCat !== "all" && filterCat !== cat ? "opacity-40" : ""}`}
-                >
-                  <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />
-                  <span className="text-xs text-muted-foreground capitalize">{cat.replace("_", " ")}</span>
-                </button>
-              ))}
-            </div>
+          {/* Legend strip */}
+          <div style={{
+            position: "absolute", bottom: 0, left: 0, right: 0,
+            background: "rgba(15,23,42,0.9)",
+            backdropFilter: "blur(8px)",
+            borderTop: "1px solid rgba(255,255,255,0.06)",
+            padding: "8px 14px", zIndex: 8000, display: "flex", gap: 14, flexWrap: "wrap",
+          }}>
+            {Object.entries(CATEGORY_COLORS).map(([cat, color]) => (
+              <button
+                key={cat}
+                onClick={() => setFilterCat(filterCat === cat ? "all" : cat)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 5,
+                  background: "none", border: "none", cursor: "pointer",
+                  opacity: filterCat !== "all" && filterCat !== cat ? 0.35 : 1,
+                  transition: "opacity 0.15s",
+                  padding: 0,
+                }}
+              >
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }} />
+                <span style={{ fontSize: 10, color: "#64748b", textTransform: "capitalize" }}>{cat.replace("_", " ")}</span>
+              </button>
+            ))}
           </div>
         </div>
 
