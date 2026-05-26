@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Request Government Access — AccelerateZero</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="stylesheet" href="../styles/main.css" />
+  <style>
+    body { background:#06070e }
+    .req-bg { position:fixed;inset:0;background:radial-gradient(ellipse 50% 35% at 50% 30%,rgba(0,102,255,0.03) 0%,transparent 70%);pointer-events:none;z-index:0 }
+    .req-container { min-height:100vh;display:flex;align-items:center;justify-content:center;padding:80px 20px;position:relative;z-index:1 }
+    .req-box { width:100%;max-width:520px }
+    .req-header { text-align:center;margin-bottom:28px }
+    .req-header .icon { width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#1e40af,#2563eb);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:#fff;font-size:1.5rem;box-shadow:0 8px 28px rgba(37,99,235,.15) }
+    .req-header h1 { font-size:1.25rem;font-weight:700;letter-spacing:-.02em }
+    .req-header p { color:var(--text-dim);font-size:.8125rem;margin-top:4px }
+    .req-card { padding:32px;background:rgba(10,12,22,.92);backdrop-filter:blur(20px);border:1px solid var(--bd);border-radius:20px;box-shadow:0 24px 80px rgba(0,0,0,.5);position:relative;overflow:hidden }
+    .req-card::before { content:'';position:absolute;top:0;left:-100%;width:200%;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:shimmer-sweep 4s ease-in-out infinite }
+    .req-grid { display:grid;grid-template-columns:1fr 1fr;gap:12px }
+    .req-field { margin-bottom:4px }
+    .req-field.full { grid-column:1/-1 }
+    .req-field label { display:block;font-size:.6875rem;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px }
+    .req-field input,.req-field select { width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--blk-elevated);color:var(--text);font-size:.8125rem;font-family:inherit;outline:none;transition:all .2s var(--ease);box-sizing:border-box }
+    .req-field input:focus,.req-field select:focus { border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow) }
+    .req-field input::placeholder { color:var(--text-faint) }
+    .req-field .hint { font-size:.625rem;color:var(--text-faint);margin-top:4px }
+    .req-btn { width:100%;padding:11px;border-radius:10px;border:none;font-size:.8125rem;font-weight:600;cursor:pointer;transition:all .25s var(--ease);font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--accent),#0052cc);color:#fff;margin-top:16px }
+    .req-btn:hover { transform:translateY(-1px);box-shadow:0 8px 20px var(--accent-glow) }
+    .req-btn:disabled { opacity:.5;cursor:not-allowed;transform:none }
+    .req-footer { text-align:center;margin-top:20px;font-size:.75rem;color:var(--text-dim) }
+    .req-footer a { color:var(--accent);font-weight:500;text-decoration:none }
+    .req-footer a:hover { text-decoration:underline }
+    .req-status { display:flex;flex-direction:column;gap:12px;margin-top:16px }
+    .req-status-card { padding:14px 16px;border-radius:12px;border:1px solid var(--bd);font-size:.8125rem;display:flex;align-items:center;gap:12px }
+    .req-status-card .icon { width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:.875rem;flex-shrink:0 }
+    .req-success { display:none;text-align:center;padding:24px 16px }
+    .req-success .check { width:56px;height:56px;border-radius:50%;background:rgba(16,185,129,.1);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;color:var(--green);font-size:1.5rem }
+    .req-success h3 { font-size:1.125rem;font-weight:600;margin:0 0 4px }
+    .req-success p { font-size:.8125rem;color:var(--text-dim);margin:0 }
+    .spinner { width:16px;height:16px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block }
+    @keyframes spin { to { transform:rotate(360deg) } }
+    @keyframes shimmer-sweep { 0%,100% { transform:translateX(-100%) } 50% { transform:translateX(100%) } }
+    @media(max-width:520px) { .req-grid { grid-template-columns:1fr } .req-card { padding:24px 16px } }
+    .req-toast { position:fixed;top:24px;right:24px;z-index:10000;display:flex;flex-direction:column;gap:8px;pointer-events:none }
+    .req-toast-item { padding:10px 16px;border-radius:10px;background:var(--blk-elevated);border:1px solid var(--bd);font-size:.75rem;color:var(--text);box-shadow:0 4px 20px rgba(0,0,0,.3);animation:slideIn .25s var(--ease-out);pointer-events:auto;max-width:320px }
+    @keyframes slideIn { from { opacity:0;transform:translateX(20px) } to { opacity:1;transform:translateX(0) } }
+  </style>
+</head>
+<body>
+  <canvas id="three-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0"></canvas>
+  <div id="particles-canvas"></div>
+  <div class="req-bg"></div>
+  <div class="req-container">
+    <div class="req-box">
+      <div class="req-header">
+        <div class="icon"><i class="fas fa-file-pen"></i></div>
+        <h1>Government Access Request</h1>
+        <p>Submit your credentials for official account verification</p>
+      </div>
+      <div class="req-card" id="req-form-card">
+        <form id="req-form">
+          <div class="req-grid">
+            <div class="req-field full">
+              <label>Full Official Name</label>
+              <input type="text" id="req-name" placeholder="Full legal name" required />
+            </div>
+            <div class="req-field">
+              <label>Department</label>
+              <input type="text" id="req-dept" placeholder="Public Works Dept" required />
+            </div>
+            <div class="req-field">
+              <label>Employee ID</label>
+              <input type="text" id="req-empid" placeholder="GOV-2024-..." required />
+            </div>
+            <div class="req-field">
+              <label>Designation</label>
+              <input type="text" id="req-desig" placeholder="Executive Engineer" required />
+            </div>
+            <div class="req-field">
+              <label>District / Region</label>
+              <input type="text" id="req-district" placeholder="Jaipur" required />
+            </div>
+            <div class="req-field full">
+              <label>Official Government Email</label>
+              <input type="email" id="req-email" placeholder="you@gov.in" required />
+              <div class="hint"><i class="fas fa-info-circle"></i> Must be a government email domain (@gov.in, @nic.in, etc.)</div>
+            </div>
+          </div>
+          <button type="submit" class="req-btn" id="req-submit-btn"><i class="fas fa-paper-plane"></i> Submit Request</button>
+        </form>
+
+        <div class="req-success" id="req-success">
+          <div class="check"><i class="fas fa-check"></i></div>
+          <h3>Request Submitted</h3>
+          <p>Your government access request is under review. You will be notified once your account is verified.</p>
+          <div class="req-status" id="req-status-info" style="text-align:left"></div>
+          <a href="gov-login.html" class="req-btn" style="display:inline-flex;width:auto;padding:10px 24px;margin-top:16px">
+            <i class="fas fa-arrow-left"></i> Back to Login
+          </a>
+        </div>
+      </div>
+      <div class="req-footer">
+        <a href="gov-login.html"><i class="fas fa-arrow-left"></i> Back to Government Portal</a>
+      </div>
+    </div>
+  </div>
+  <div class="req-toast" id="req-toast"></div>
+
+  <script>
+    function showToast(msg, type='info') {
+      const c = document.getElementById('req-toast');
+      if (!c) return;
+      const colors = {info:'var(--accent)',success:'var(--green)',error:'var(--red)'};
+      const el = document.createElement('div');
+      el.className = 'req-toast-item';
+      el.style.borderColor = colors[type] || colors.info;
+      el.textContent = msg;
+      c.appendChild(el);
+      setTimeout(() => { el.style.opacity='0'; el.style.transition='opacity .3s'; setTimeout(() => el.remove(),300) }, 4000);
+    }
+
+    document.getElementById('req-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('req-submit-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Submitting...';
+
+      const data = {
+        full_name: document.getElementById('req-name').value.trim(),
+        department: document.getElementById('req-dept').value.trim(),
+        employee_id: document.getElementById('req-empid').value.trim(),
+        designation: document.getElementById('req-desig').value.trim(),
+        district: document.getElementById('req-district').value.trim(),
+        official_email: document.getElementById('req-email').value.trim().toLowerCase(),
+      };
+
+      try {
+        const res = await fetch('/api/v1/gov/request-access', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.detail || 'Submission failed');
+
+        document.getElementById('req-form').style.display = 'none';
+        document.getElementById('req-success').style.display = 'block';
+        document.getElementById('req-status-info').innerHTML = `
+          <div class="req-status-card">
+            <div class="icon" style="background:rgba(245,158,11,.1);color:#d97706"><i class="fas fa-clock"></i></div>
+            <div>
+              <div style="font-weight:500">Status: Pending Review</div>
+              <div style="font-size:.6875rem;color:var(--text-dim)">Your request has been queued for admin verification</div>
+            </div>
+          </div>
+        `;
+        showToast('Request submitted successfully!', 'success');
+      } catch (e) {
+        showToast(e.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Request';
+      }
+    });
+
+    // Client-side email domain hint
+    document.getElementById('req-email').addEventListener('blur', function() {
+      const domain = this.value.split('@')[1];
+      if (domain && !domain.match(/\.gov\.in$|\.nic\.in$|^gov\.in$|^nic\.in$/)) {
+        showToast('Please use an official government email domain (@gov.in, @nic.in)', 'error');
+      }
+    });
+  </script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="../scripts/auth.js">
+  <script src="../scripts/router.js"></script>
+  <script src="../scripts/http.js"></script>
+  <script src="../scripts/ui.js"></script>
+  <script src="../scripts/navigation.js"></script>
+</body>
+</html>

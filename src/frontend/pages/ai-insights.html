@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Insights — AccelerateZero</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="stylesheet" href="../styles/main.css" />
+  <style>
+    .insight-card { padding: 24px; background: var(--blk-surface); border: 1px solid var(--bd); border-radius: 14px; position: relative; overflow: hidden }
+    .insight-card .holo-overlay { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,102,255,.03), transparent); pointer-events: none; border-radius: 14px }
+    .insight-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; margin-bottom: 12px }
+    .insight-value { font-size: 1.75rem; font-weight: 700; font-family: var(--mono); line-height: 1.1 }
+    .insight-label { font-size: .75rem; color: var(--text-dim); margin-top: 4px }
+    .insight-tag { display: inline-block; padding: 4px 10px; border-radius: 100px; font-size: .6875rem; font-weight: 500; margin: 2px; border: 1px solid var(--bd) }
+    .insight-tag.blue { background: rgba(0,102,255,.1); color: var(--accent); border-color: rgba(0,102,255,.2) }
+    .insight-tag.green { background: rgba(16,185,129,.1); color: var(--green); border-color: rgba(16,185,129,.2) }
+    .insight-tag.amber { background: rgba(245,158,11,.1); color: var(--amber); border-color: rgba(245,158,11,.2) }
+    .rec-card { padding: 16px; border-radius: 10px; background: rgba(255,255,255,.02); border: 1px solid var(--bd); display: flex; align-items: start; gap: 12px; margin-bottom: 8px }
+    .rec-card i { color: var(--accent); font-size: .875rem; margin-top: 2px }
+    .rec-card p { font-size: .8125rem; color: var(--text-dim); margin: 0; line-height: 1.5 }
+  </style>
+</head>
+<body>
+  <div id="particles-canvas"></div>
+
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <a href="/" class="sidebar-brand">
+        <img src="../images/logo.png" alt="" class="sidebar-brand-img" loading="lazy" />
+        <span class="sidebar-brand-name">AccelerateZero</span>
+      </a>
+      <button class="sidebar-close" id="sidebar-close" onclick="document.body.classList.remove('nav-open')" aria-label="Close navigation">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-label">Operations</div>
+      <a href="dashboard.html" class="sidebar-link"><i class="fas fa-chart-bar"></i><span>Dashboard</span></a>
+      <a href="map.html" class="sidebar-link"><i class="fas fa-map"></i><span>Live Map</span></a>
+      <a href="report.html" class="sidebar-link"><i class="fas fa-plus-circle"></i><span>Report Hazard</span></a>
+      <a href="track.html" class="sidebar-link"><i class="fas fa-search"></i><span>Track Reports</span></a>
+
+      <div class="sidebar-label">Emergency</div>
+      <a href="emergency.html" class="sidebar-link" style="background:rgba(255,45,85,.08);border:1px solid rgba(255,45,85,.15);margin:2px 0;border-radius:8px"><i class="fas fa-exclamation-triangle" style="color:var(--red)"></i><span style="color:var(--red);font-weight:700">SOS Emergency</span><span class="badge-dot" style="background:var(--red);animation:ping 1s infinite"></span></a>
+
+      <div class="sidebar-label">Intelligence</div>
+      <a href="ai-insights.html" class="sidebar-link active"><i class="fas fa-brain"></i><span>AI Insights</span></a>
+      <a href="traffic-analytics.html" class="sidebar-link"><i class="fas fa-chart-line"></i><span>Traffic Analytics</span></a>
+      <a href="heatmaps.html" class="sidebar-link"><i class="fas fa-fire"></i><span>Heatmaps</span><span class="badge-dot"></span></a>
+
+      <div class="sidebar-label" id="gov-sidebar-label" style="display:none">Government</div>
+      <a href="budget-infrastructure.html" class="sidebar-link gov-sidebar-link" style="display:none"><i class="fas fa-coins"></i><span>Budget & Infrastructure</span></a>
+      <a href="contractors.html" class="sidebar-link gov-sidebar-link" style="display:none"><i class="fas fa-user-tie"></i><span>Contractors & Tenders</span></a>
+      <a href="authority-data.html" class="sidebar-link gov-sidebar-link" style="display:none"><i class="fas fa-building"></i><span>Authority Data</span></a>
+
+      <div class="sidebar-label" id="admin-section-label" style="display:none">Administration</div>
+      <a href="admin-panel.html" id="admin-sidebar-link" class="sidebar-link" style="display:none"><i class="fas fa-shield-halved"></i><span>Admin Panel</span></a>
+
+      <div class="sidebar-label">Account</div>
+      <a href="profile.html" class="sidebar-link"><i class="fas fa-user"></i><span>Profile</span></a>
+      <a href="my-reports.html" class="sidebar-link"><i class="fas fa-file-alt"></i><span>My Reports</span></a>
+      <a href="settings.html" class="sidebar-link"><i class="fas fa-cog"></i><span>Settings</span></a>
+    </nav>
+    <div class="sidebar-foot">
+      <button class="sidebar-link" id="logout-btn">
+        <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Sidebar Overlay -->
+  <div class="nav-overlay" id="nav-overlay" onclick="document.body.classList.remove('nav-open')"></div>
+
+  <!-- Top Bar -->
+  <div class="topbar" id="topbar">
+    <div class="topbar-left">
+      <button class="nav-toggle" id="nav-toggle" onclick="event.stopPropagation();document.body.classList.toggle('nav-open')" aria-label="Toggle navigation">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="2" rx="2" fill="currentColor"></rect><rect y="11" width="24" height="2" rx="2" fill="currentColor"></rect><rect y="22" width="24" height="2" rx="2" fill="currentColor"></rect></svg>
+      </button>
+      <span class="topbar-title">AI <span class="highlight">Insights</span></span>
+      <span class="topbar-meta"><span class="pulse"></span> Live Analysis</span>
+    </div>
+    <div class="topbar-right">
+      <div id="notif-toggle" style="position:relative;cursor:pointer;width:32px;height:32px;display:none;align-items:center;justify-content:center;border-radius:8px;transition:background 0.2s var(--ease)" onclick="Notifications.toggle()" title="Notifications">
+        <i class="fas fa-bell" style="font-size:0.8125rem;color:var(--text-dim)"></i>
+        <span id="notif-badge" style="display:none;position:absolute;top:-2px;right:-2px;width:16px;height:16px;border-radius:50%;background:var(--red);color:#fff;font-size:0.5625rem;font-weight:700;align-items:center;justify-content:center;border:2px solid var(--blk)">0</span>
+      </div>
+      <div id="user-menu-container" style="display:none" class="relative">
+        <div id="user-menu-btn" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 8px;border-radius:8px;transition:background 0.2s var(--ease)">
+          <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#4f46e5,#6366f1);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.6875rem"><i class="fas fa-user"></i></div>
+          <span id="user-name-display" style="font-size:0.8125rem;font-weight:500"></span>
+        </div>
+        <div id="user-dropdown" style="position:absolute;top:calc(100% + 8px);right:0;min-width:180px;background:var(--blk-elevated);border:1px solid var(--bd);border-radius:12px;padding:8px;display:none;z-index:200">
+          <a href="profile.html" style="display:block;padding:8px 12px;border-radius:8px;font-size:0.8125rem;color:var(--text-dim)"><i class="fas fa-user" style="width:16px;margin-right:8px"></i>Profile</a>
+          <a href="my-reports.html" style="display:block;padding:8px 12px;border-radius:8px;font-size:0.8125rem;color:var(--text-dim)"><i class="fas fa-file-alt" style="width:16px;margin-right:8px"></i>My Reports</a>
+          <div style="height:1px;background:var(--bd);margin:4px 8px"></div>
+          <button id="logout-btn-top" style="display:block;width:100%;text-align:left;padding:8px 12px;border-radius:8px;font-size:0.8125rem;color:var(--red);background:none;border:none;cursor:pointer"><i class="fas fa-sign-out-alt" style="width:16px;margin-right:8px"></i>Logout</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="page-main scene-3d">
+    <div style="max-width:1200px;margin:0 auto;padding:24px">
+
+      <!-- AI Neural Visualization Banner -->
+      <div class="panel-3d" style="padding:24px;background:linear-gradient(135deg,rgba(0,102,255,.04),rgba(0,212,255,.02));border:1px solid var(--bd-accent);border-radius:16px;margin-bottom:24px;position:relative;overflow:hidden">
+        <div class="holo-overlay"></div>
+        <div style="display:flex;align-items:center;gap:24px;position:relative;z-index:1">
+          <div style="position:relative;width:80px;height:80px;flex-shrink:0">
+            <svg viewBox="0 0 80 80" style="width:100%;height:100%">
+              <defs>
+                <filter id="nGlow"><feGaussianBlur stdDeviation="2"/></filter>
+              </defs>
+              <circle cx="40" cy="40" r="38" fill="none" stroke="rgba(0,102,255,0.08)" stroke-width="1"/>
+              <circle cx="40" cy="40" r="28" fill="none" stroke="rgba(0,212,255,0.06)" stroke-width="0.5" stroke-dasharray="3 3">
+                <animateTransform attributeName="transform" type="rotate" from="0 40 40" to="360 40 40" dur="20s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="40" cy="40" r="16" fill="rgba(0,102,255,0.08)" stroke="rgba(0,212,255,0.15)" stroke-width="1"/>
+              <circle cx="40" cy="40" r="6" fill="var(--accent)" filter="url(#nGlow)" opacity="0.8">
+                <animate attributeName="opacity" values="0.8;0.3;0.8" dur="2s" repeatCount="indefinite"/>
+              </circle>
+              <line x1="40" y1="16" x2="40" y2="28" stroke="rgba(0,102,255,0.2)" stroke-width="0.5" stroke-dasharray="2 2">
+                <animate attributeName="opacity" values="0.2;0.6;0.2" dur="3s" repeatCount="indefinite"/>
+              </line>
+              <line x1="40" y1="52" x2="40" y2="64" stroke="rgba(0,212,255,0.15)" stroke-width="0.5" stroke-dasharray="2 2">
+                <animate attributeName="opacity" values="0.15;0.5;0.15" dur="3.5s" repeatCount="indefinite"/>
+              </line>
+              <line x1="16" y1="40" x2="28" y2="40" stroke="rgba(0,102,255,0.15)" stroke-width="0.5" stroke-dasharray="2 2">
+                <animate attributeName="opacity" values="0.15;0.5;0.15" dur="4s" repeatCount="indefinite"/>
+              </line>
+              <line x1="52" y1="40" x2="64" y2="40" stroke="rgba(0,212,255,0.15)" stroke-width="0.5" stroke-dasharray="2 2">
+                <animate attributeName="opacity" values="0.15;0.5;0.15" dur="2.5s" repeatCount="indefinite"/>
+              </line>
+              <circle cx="20" cy="20" r="2" fill="var(--accent-secondary)" opacity="0.4">
+                <animate attributeName="opacity" values="0.4;0.1;0.4" dur="2.5s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="60" cy="20" r="2" fill="var(--accent)" opacity="0.4">
+                <animate attributeName="opacity" values="0.4;0.1;0.4" dur="3.2s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="20" cy="60" r="2" fill="var(--accent-secondary)" opacity="0.3">
+                <animate attributeName="opacity" values="0.3;0.1;0.3" dur="2.8s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="60" cy="60" r="2" fill="var(--accent)" opacity="0.3">
+                <animate attributeName="opacity" values="0.3;0.1;0.3" dur="3.6s" repeatCount="indefinite"/>
+              </circle>
+            </svg>
+            <div class="ai-pulse-ring" style="inset:-4px"></div>
+            <div class="ai-pulse-ring" style="inset:-10px"></div>
+          </div>
+          <div>
+            <div style="font-size:1.125rem;font-weight:700;margin-bottom:4px">AI Neural Engine <span class="gradient">Active</span></div>
+            <p style="font-size:.8125rem;color:var(--text-dim);line-height:1.6;margin:0">Real-time analysis of 1,284 incidents across 12 monitoring zones. System confidence at 94.3% with 23 active classification models.</p>
+            <div style="display:flex;gap:16px;margin-top:12px">
+              <div class="live-indicator"><div class="bars"><span></span><span></span><span></span><span></span></div> Processing</div>
+              <div class="signal-vis"><div class="signal-bar" style="height:40%"></div><div class="signal-bar" style="height:55%"></div><div class="signal-bar" style="height:75%"></div><div class="signal-bar" style="height:95%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-bottom:24px">
+        <div class="panel-3d insight-card">
+          <div class="holo-overlay"></div>
+          <div class="insight-icon blue-bg"><i class="fas fa-flag" style="color:var(--accent)"></i></div>
+          <div class="insight-value gradient">1,284</div>
+          <div class="insight-label">Hazards Detected (30d)</div>
+        </div>
+        <div class="panel-3d insight-card">
+          <div class="holo-overlay"></div>
+          <div class="insight-icon green-bg"><i class="fas fa-check-circle" style="color:var(--green)"></i></div>
+          <div class="insight-value" style="color:var(--green)">87%</div>
+          <div class="insight-label">AI Resolution Accuracy</div>
+        </div>
+        <div class="panel-3d insight-card">
+          <div class="holo-overlay"></div>
+          <div class="insight-icon amber-bg"><i class="fas fa-clock" style="color:var(--amber)"></i></div>
+          <div class="insight-value" style="color:var(--amber)">4.2m</div>
+          <div class="insight-label">Avg Response Time</div>
+        </div>
+        <div class="panel-3d insight-card">
+          <div class="holo-overlay"></div>
+          <div class="insight-icon" style="background:rgba(139,92,246,.1)"><i class="fas fa-database" style="color:#8b5cf6"></i></div>
+          <div class="insight-value" style="color:#8b5cf6">23</div>
+          <div class="insight-label">Active Models</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="panel-3d" style="padding:20px;background:var(--blk-surface);border:1px solid var(--bd);border-radius:14px">
+          <div class="holo-overlay"></div>
+          <div style="font-size:.75rem;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px">Top Incident Categories</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <span class="insight-tag blue">Pothole (342)</span>
+            <span class="insight-tag blue">Broken Signal (198)</span>
+            <span class="insight-tag blue">Road Blockage (156)</span>
+            <span class="insight-tag blue">Fallen Tree (87)</span>
+            <span class="insight-tag blue">Flooding (64)</span>
+            <span class="insight-tag blue">Streetlight Out (52)</span>
+            <span class="insight-tag blue">Cable Hazard (41)</span>
+            <span class="insight-tag blue">Manhole Open (33)</span>
+          </div>
+          <!-- Chart bars for category distribution -->
+          <div style="margin-top:20px;font-size:.75rem;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">Category Distribution</div>
+          <div class="chart-bar-group">
+            <div class="chart-bar-row">
+              <span class="chart-bar-label">Pothole</span>
+              <div class="chart-bar-track"><div class="chart-bar-fill amber" style="width:36%"></div></div>
+              <span class="chart-bar-value">36%</span>
+            </div>
+            <div class="chart-bar-row">
+              <span class="chart-bar-label">Signal</span>
+              <div class="chart-bar-track"><div class="chart-bar-fill blue" style="width:21%"></div></div>
+              <span class="chart-bar-value">21%</span>
+            </div>
+            <div class="chart-bar-row">
+              <span class="chart-bar-label">Blockage</span>
+              <div class="chart-bar-track"><div class="chart-bar-fill purple" style="width:16%"></div></div>
+              <span class="chart-bar-value">16%</span>
+            </div>
+            <div class="chart-bar-row">
+              <span class="chart-bar-label">Flooding</span>
+              <div class="chart-bar-track"><div class="chart-bar-fill blue" style="width:10%"></div></div>
+              <span class="chart-bar-value">10%</span>
+            </div>
+          </div>
+          <div style="margin-top:20px;font-size:.75rem;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">Trending (7d)</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <span class="insight-tag green">Pothole +23%</span>
+            <span class="insight-tag amber">Flooding +12%</span>
+            <span class="insight-tag green">Broken Signal +8%</span>
+          </div>
+        </div>
+        <div class="panel-3d" style="padding:20px;background:var(--blk-surface);border:1px solid var(--bd);border-radius:14px">
+          <div class="holo-overlay"></div>
+          <div style="font-size:.75rem;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px">AI Recommendations</div>
+          <div class="rec-card">
+            <i class="fas fa-lightbulb"></i>
+            <p><strong style="color:var(--text)">Pothole surge</strong> — Zone 4 pothole reports up 34%. Recommend preventive inspection.</p>
+          </div>
+          <div class="rec-card">
+            <i class="fas fa-lightbulb"></i>
+            <p><strong style="color:var(--text)">Signal outage pattern</strong> — 3 consecutive failures at Marine Drive. Possible power grid issue.</p>
+          </div>
+          <div class="rec-card">
+            <i class="fas fa-lightbulb"></i>
+            <p><strong style="color:var(--text)">High-risk zone</strong> — Sector 12 has 2.4x avg accident rate. Deploy patrol.</p>
+          </div>
+          <!-- Confidence indicator -->
+          <div style="margin-top:16px;padding:12px;background:rgba(0,230,118,.04);border:1px solid rgba(0,230,118,.1);border-radius:8px;display:flex;align-items:center;gap:10px">
+            <div style="width:6px;height:6px;border-radius:50%;background:var(--green);animation:ping 2s infinite"></div>
+            <div style="font-size:.6875rem">
+              <strong style="color:var(--green)">AI Confidence: 94.3%</strong> — All recommendations are based on real-time data analysis.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottombar" id="mobile-nav">
+    <div class="bottombar-inner">
+      <a href="dashboard.html"><i class="fas fa-chart-bar"></i><span>Dashboard</span></a>
+      <a href="map.html"><i class="fas fa-map"></i><span>Map</span></a>
+      <a href="report.html"><i class="fas fa-plus-circle"></i><span>Report</span></a>
+      <a href="track.html"><i class="fas fa-search"></i><span>Track</span></a>
+
+      <a href="emergency.html"><i class="fas fa-exclamation-triangle" style="color:var(--red)"></i><span style="color:var(--red)">SOS</span></a>
+
+      <a href="profile.html"><i class="fas fa-user"></i><span>Profile</span></a>
+    </div>
+  </nav>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="../scripts/auth.js">
+  <script src="../scripts/router.js"></script>
+  <script src="../scripts/http.js"></script>
+  <script src="../scripts/ui.js"></script>
+  <script src="../scripts/navigation.js"></script>
+  <script src="../scripts/realtime.js"></script>
+  <script src="../scripts/notifications.js"></script>
+  <script src="../scripts/app.js"></script>
+  <script src="../scripts/analytics.js"></script>
+  <script src="../scripts/emergency.js"></script>
+  <script src="../scripts/chatbot.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof initNotifications === 'function' && getAccessTokenSync()) {
+        initNotifications();
+        document.getElementById('notif-toggle').style.display = 'flex';
+      }
+      if (typeof initRealtime === 'function' && getAccessTokenSync()) {
+        initRealtime();
+      }
+      const topLogout = document.getElementById('logout-btn-top');
+      if (topLogout) {
+        topLogout.addEventListener('click', async () => {
+          await logoutUser();
+          window.location.href = '/';
+        });
+      }
+    });
+  </script>
+</body>
+</html>

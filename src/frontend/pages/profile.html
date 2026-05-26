@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile — AccelerateZero</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="stylesheet" href="../styles/main.css" />
+</head>
+<body>
+  <div id="particles-canvas"></div>
+
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <a href="/" class="sidebar-brand">
+        <img src="../images/logo.png" alt="" class="sidebar-brand-img" loading="lazy" />
+        <span class="sidebar-brand-name">AccelerateZero</span>
+      </a>
+      <button class="sidebar-close" id="sidebar-close" onclick="document.body.classList.remove('nav-open')" aria-label="Close navigation">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-label">Operations</div>
+      <a href="dashboard.html" class="sidebar-link"><i class="fas fa-chart-bar"></i><span>Dashboard</span></a>
+      <a href="map.html" class="sidebar-link"><i class="fas fa-map"></i><span>Live Map</span></a>
+      <a href="report.html" class="sidebar-link"><i class="fas fa-plus-circle"></i><span>Report Hazard</span></a>
+      <a href="track.html" class="sidebar-link"><i class="fas fa-search"></i><span>Track Reports</span></a>
+
+      <div class="sidebar-label">Emergency</div>
+      <a href="emergency.html" class="sidebar-link" style="background:rgba(255,45,85,.08);border:1px solid rgba(255,45,85,.15);margin:2px 0;border-radius:8px"><i class="fas fa-exclamation-triangle" style="color:var(--red)"></i><span style="color:var(--red);font-weight:700">SOS Emergency</span><span class="badge-dot" style="background:var(--red);animation:ping 1s infinite"></span></a>
+
+      <div class="sidebar-label">Intelligence</div>
+      <a href="ai-insights.html" class="sidebar-link"><i class="fas fa-brain"></i><span>AI Insights</span></a>
+      <a href="traffic-analytics.html" class="sidebar-link"><i class="fas fa-chart-line"></i><span>Traffic Analytics</span></a>
+      <a href="heatmaps.html" class="sidebar-link"><i class="fas fa-fire"></i><span>Heatmaps</span><span class="badge-dot"></span></a>
+
+      <div class="sidebar-label" id="gov-sidebar-label" style="display:none">Government</div>
+      <a href="budget-infrastructure.html" id="gov-link-budget" class="sidebar-link gov-sidebar-link" style="display:none"><i class="fas fa-coins"></i><span>Budget & Infrastructure</span></a>
+      <a href="contractors.html" id="gov-link-contractors" class="sidebar-link gov-sidebar-link" style="display:none"><i class="fas fa-user-tie"></i><span>Contractors & Tenders</span></a>
+      <a href="authority-data.html" id="gov-link-data" class="sidebar-link gov-sidebar-link" style="display:none"><i class="fas fa-building"></i><span>Authority Data</span></a>
+
+      <div class="sidebar-label" id="admin-section-label" style="display:none">Administration</div>
+      <a href="admin-panel.html" id="admin-sidebar-link" class="sidebar-link" style="display:none"><i class="fas fa-shield-halved"></i><span>Admin Panel</span></a>
+
+      <div class="sidebar-label">Account</div>
+      <a href="profile.html" class="sidebar-link active"><i class="fas fa-user"></i><span>Profile</span></a>
+      <a href="my-reports.html" class="sidebar-link"><i class="fas fa-file-alt"></i><span>My Reports</span></a>
+      <a href="settings.html" class="sidebar-link"><i class="fas fa-cog"></i><span>Settings</span></a>
+    </nav>
+    <div class="sidebar-foot">
+      <button class="sidebar-link" id="logout-btn">
+        <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Sidebar Overlay -->
+  <div class="nav-overlay" id="nav-overlay" onclick="document.body.classList.remove('nav-open')"></div>
+
+  <!-- Top Bar -->
+  <div class="topbar" id="topbar">
+    <div class="topbar-left">
+      <button class="nav-toggle" id="nav-toggle" onclick="event.stopPropagation();document.body.classList.toggle('nav-open')" aria-label="Toggle navigation">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="2" rx="2" fill="currentColor"></rect><rect y="11" width="24" height="2" rx="2" fill="currentColor"></rect><rect y="22" width="24" height="2" rx="2" fill="currentColor"></rect></svg>
+      </button>
+      <span class="topbar-title"><span class="highlight">Profile</span></span>
+    </div>
+    <div class="topbar-right">
+      <div id="notif-toggle" style="position:relative;cursor:pointer;width:32px;height:32px;display:none;align-items:center;justify-content:center;border-radius:8px;transition:background 0.2s var(--ease)" onclick="Notifications.toggle()" title="Notifications">
+        <i class="fas fa-bell" style="font-size:0.8125rem;color:var(--text-dim)"></i>
+        <span id="notif-badge" style="display:none;position:absolute;top:-2px;right:-2px;width:16px;height:16px;border-radius:50%;background:var(--red);color:#fff;font-size:0.5625rem;font-weight:700;align-items:center;justify-content:center;border:2px solid var(--blk)">0</span>
+      </div>
+      <div id="user-menu-container" style="display:none" class="relative">
+        <div id="user-menu-btn" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 8px;border-radius:8px;transition:background 0.2s var(--ease)">
+          <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#4f46e5,#6366f1);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.6875rem"><i class="fas fa-user"></i></div>
+          <span id="user-name-display" style="font-size:0.8125rem;font-weight:500"></span>
+        </div>
+        <div id="user-dropdown" style="position:absolute;top:calc(100% + 8px);right:0;min-width:180px;background:var(--blk-elevated);border:1px solid var(--bd);border-radius:12px;padding:8px;display:none;z-index:200">
+          <a href="profile.html" style="display:block;padding:8px 12px;border-radius:8px;font-size:0.8125rem;color:var(--text-dim)"><i class="fas fa-user" style="width:16px;margin-right:8px"></i>Profile</a>
+          <a href="my-reports.html" style="display:block;padding:8px 12px;border-radius:8px;font-size:0.8125rem;color:var(--text-dim)"><i class="fas fa-file-alt" style="width:16px;margin-right:8px"></i>My Reports</a>
+          <div style="height:1px;background:var(--bd);margin:4px 8px"></div>
+          <button id="logout-btn-top" style="display:block;width:100%;text-align:left;padding:8px 12px;border-radius:8px;font-size:0.8125rem;color:var(--red);background:none;border:none;cursor:pointer"><i class="fas fa-sign-out-alt" style="width:16px;margin-right:8px"></i>Logout</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottombar" id="mobile-nav">
+    <div class="bottombar-inner">
+      <a href="dashboard.html"><i class="fas fa-chart-bar"></i><span>Dashboard</span></a>
+      <a href="map.html"><i class="fas fa-map"></i><span>Map</span></a>
+      <a href="report.html"><i class="fas fa-plus-circle"></i><span>Report</span></a>
+      <a href="track.html"><i class="fas fa-search"></i><span>Track</span></a>
+
+      <a href="emergency.html"><i class="fas fa-exclamation-triangle" style="color:var(--red)"></i><span style="color:var(--red)">SOS</span></a>
+
+      <a href="profile.html" class="active"><i class="fas fa-user"></i><span>Profile</span></a>
+    </div>
+  </nav>
+
+  <div class="page-main scene-3d">
+    <div class="shell" style="max-width:1000px;margin:0 auto;padding:24px 16px">
+
+      <!-- ═══ Profile Header Card ═══ -->
+      <div class="panel-3d pf-header" style="display:flex;align-items:center;gap:24px;padding:28px 32px;background:var(--blk-surface);border:1px solid var(--bd);border-radius:18px;margin-bottom:20px;position:relative;overflow:hidden">
+        <div class="holo-overlay"></div>
+
+        <!-- Avatar -->
+        <div class="pf-avatar-wrap" style="position:relative;flex-shrink:0">
+          <div id="pf-avatar" style="width:80px;height:80px;border-radius:18px;background:linear-gradient(135deg,#4f46e5,#06b6d4);display:flex;align-items:center;justify-content:center;font-size:2rem;color:#fff;box-shadow:0 8px 28px rgba(79,70,229,.3);overflow:hidden">
+            <i class="fas fa-user" id="pf-avatar-icon"></i>
+            <img id="pf-avatar-img" style="display:none;width:100%;height:100%;object-fit:cover" src="" alt="" />
+          </div>
+          <label for="pf-avatar-input" class="pf-avatar-edit" style="position:absolute;bottom:-4px;right:-4px;width:28px;height:28px;border-radius:8px;background:var(--blk-elevated);border:2px solid var(--blk-surface);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);font-size:.625rem;box-shadow:0 2px 8px rgba(0,0,0,.3)">
+            <i class="fas fa-camera"></i>
+          </label>
+          <input id="pf-avatar-input" type="file" accept="image/*" style="display:none" />
+        </div>
+
+        <!-- Name + Email + Role -->
+        <div style="flex:1;min-width:0">
+          <h1 id="pf-name" class="f4" style="margin:0 0 2px;font-weight:700">Loading...</h1>
+          <p id="pf-email" style="margin:0 0 10px;font-size:.8125rem;color:var(--text-dim)"></p>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span id="pf-role-badge" class="pf-role-badge citizen"><i class="fas fa-lock" style="font-size:.625rem;opacity:.6"></i> <span id="pf-role-text">citizen</span></span>
+            <span id="pf-verified-badge" class="pf-verified-badge" style="display:none"><i class="fas fa-check-circle"></i> Verified</span>
+            <span id="pf-status-badge" class="pf-status-badge" style="display:none"></span>
+          </div>
+        </div>
+
+        <!-- Profile completion -->
+        <div class="pf-completion" style="text-align:center;flex-shrink:0">
+          <div class="pf-ring" style="width:56px;height:56px;border-radius:50%;position:relative;display:flex;align-items:center;justify-content:center">
+            <svg style="position:absolute;inset:0;transform:rotate(-90deg)" width="56" height="56">
+              <circle cx="28" cy="28" r="24" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="3"/>
+              <circle id="pf-ring-fill" cx="28" cy="28" r="24" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-dasharray="151" stroke-dashoffset="151" style="transition:stroke-dashoffset .8s var(--ease)"/>
+            </svg>
+            <span id="pf-completion-pct" class="mono" style="font-size:.8125rem;font-weight:700">0%</span>
+          </div>
+          <div style="font-size:.625rem;color:var(--text-faint);margin-top:4px">Complete</div>
+        </div>
+      </div>
+
+      <!-- ═══ Main Grid: Left (Personal) + Right (Security/Role) ═══ -->
+      <div class="pf-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+        <!-- ─── LEFT COLUMN ─── -->
+
+        <!-- Personal Information -->
+        <div class="panel-3d pf-section" style="background:var(--blk-surface);border:1px solid var(--bd);border-radius:14px;overflow:hidden">
+          <div class="holo-overlay"></div>
+          <div class="pf-section-header" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--bd)">
+            <span style="font-size:.75rem;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em"><i class="fas fa-user-edit" style="margin-right:8px"></i>Personal Information</span>
+            <button id="pf-edit-toggle" class="pf-edit-btn" style="padding:4px 12px;border-radius:6px;border:1px solid var(--bd);background:none;color:var(--text-dim);font-size:.6875rem;cursor:pointer">Edit</button>
+          </div>
+          <div class="pf-section-body" style="padding:16px 20px 20px">
+            <div class="pf-field">
+              <label class="pf-label">Full Name</label>
+              <div class="pf-value" id="pf-display-name">--</div>
+              <input class="pf-input" id="pf-input-name" style="display:none" />
+            </div>
+            <div class="pf-field">
+              <label class="pf-label">Email</label>
+              <div class="pf-value" id="pf-display-email">--</div>
+            </div>
+            <div class="pf-field">
+              <label class="pf-label">Phone</label>
+              <div class="pf-value" id="pf-display-phone">--</div>
+              <input class="pf-input" id="pf-input-phone" style="display:none" />
+            </div>
+            <div class="pf-field">
+              <label class="pf-label">Address</label>
+              <div class="pf-value" id="pf-display-address">--</div>
+              <input class="pf-input" id="pf-input-address" style="display:none" />
+            </div>
+            <div class="pf-field">
+              <label class="pf-label">Emergency Contact</label>
+              <div class="pf-value" id="pf-display-emergency">--</div>
+              <input class="pf-input" id="pf-input-emergency" style="display:none" placeholder="Phone number" />
+            </div>
+            <div class="pf-field">
+              <label class="pf-label">Language</label>
+              <div class="pf-value" id="pf-display-language">--</div>
+              <select class="pf-input pf-select" id="pf-input-language" style="display:none">
+                <option value="en">English</option>
+                <option value="hi">Hindi</option>
+                <option value="ta">Tamil</option>
+                <option value="te">Telugu</option>
+                <option value="bn">Bengali</option>
+                <option value="mr">Marathi</option>
+                <option value="gu">Gujarati</option>
+              </select>
+            </div>
+            <div class="pf-field" style="border-bottom:none">
+              <label class="pf-label">Bio</label>
+              <div class="pf-value" id="pf-display-bio">--</div>
+              <textarea class="pf-input pf-textarea" id="pf-input-bio" style="display:none" rows="3" placeholder="A short bio about yourself"></textarea>
+            </div>
+            <div id="pf-edit-actions" style="display:none;gap:8px;justify-content:flex-end;padding-top:12px;border-top:1px solid var(--bd);margin-top:12px">
+              <button id="pf-cancel-btn" class="pf-btn pf-btn-secondary">Cancel</button>
+              <button id="pf-save-btn" class="pf-btn pf-btn-primary">Save Changes</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── RIGHT COLUMN ─── -->
+
+        <!-- Role & Permissions -->
+        <div class="panel-3d pf-section" style="background:var(--blk-surface);border:1px solid var(--bd);border-radius:14px;overflow:hidden">
+          <div class="holo-overlay"></div>
+          <div class="pf-section-header" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--bd)">
+            <span style="font-size:.75rem;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em"><i class="fas fa-shield-halved" style="margin-right:8px"></i>Role & Permissions</span>
+          </div>
+          <div class="pf-section-body" style="padding:16px 20px 20px">
+            <div class="pf-field">
+              <label class="pf-label">Account Role</label>
+              <div id="pf-role-display" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <span id="pf-role-badge-lg" class="pf-role-badge citizen" style="font-size:.8125rem;padding:6px 14px"><i class="fas fa-lock"></i> <span id="pf-role-text-lg">citizen</span></span>
+                <span style="font-size:.6875rem;color:var(--text-faint);background:rgba(255,255,255,.03);padding:2px 8px;border-radius:4px"><i class="fas fa-lock"></i> Locked by System Permissions</span>
+              </div>
+            </div>
+
+            <!-- Role Upgrade Request (citizens only) -->
+            <div id="pf-upgrade-section" style="display:none;margin-top:8px">
+              <div style="height:1px;background:var(--bd);margin:12px 0"></div>
+              <label class="pf-label">Request Role Upgrade</label>
+              <p style="font-size:.75rem;color:var(--text-dim);margin:4px 0 10px">Upgrade requests are reviewed by administration.</p>
+              <div style="display:flex;gap:8px">
+                <select id="pf-upgrade-role" class="pf-input pf-select" style="flex:1">
+                  <option value="authority">Authority</option>
+                </select>
+                <button id="pf-upgrade-btn" class="pf-btn pf-btn-primary" style="white-space:nowrap">Submit Request</button>
+              </div>
+              <textarea id="pf-upgrade-reason" class="pf-input pf-textarea" style="margin-top:8px" rows="2" placeholder="Reason for upgrade request..."></textarea>
+              <div id="pf-upgrade-status" style="margin-top:8px"></div>
+            </div>
+
+            <!-- Pending requests display -->
+            <div id="pf-requests-status" style="display:none;margin-top:8px">
+              <div style="height:1px;background:var(--bd);margin:12px 0"></div>
+              <label class="pf-label">Upgrade Requests</label>
+              <div id="pf-requests-list" style="margin-top:6px"></div>
+            </div>
+
+            <!-- Verification Status -->
+            <div style="height:1px;background:var(--bd);margin:12px 0"></div>
+            <div class="pf-field" style="border-bottom:none">
+              <label class="pf-label">Account Verification</label>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+                <span id="pf-verification-status" class="pf-verified-badge" style="font-size:.75rem;padding:4px 10px;display:inline-flex"><i class="fas fa-clock"></i> Pending</span>
+              </div>
+              <p style="font-size:.6875rem;color:var(--text-faint);margin:6px 0 0">Verification status is managed by administration.</p>
+            </div>
+
+            <!-- Government Access Request Status -->
+            <div id="pf-gov-request-section" style="display:none">
+              <div style="height:1px;background:var(--bd);margin:12px 0"></div>
+              <div class="pf-field" style="border-bottom:none">
+                <label class="pf-label">Government Access Request</label>
+                <div id="pf-gov-request-status" style="display:flex;align-items:center;gap:8px;margin-top:4px;font-size:.8125rem"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Security -->
+        <div class="panel-3d pf-section" style="background:var(--blk-surface);border:1px solid var(--bd);border-radius:14px;overflow:hidden">
+          <div class="holo-overlay"></div>
+          <div class="pf-section-header" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--bd)">
+            <span style="font-size:.75rem;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em"><i class="fas fa-key" style="margin-right:8px"></i>Security</span>
+          </div>
+          <div class="pf-section-body" style="padding:16px 20px 20px">
+            <div class="pf-field">
+              <label class="pf-label">Password</label>
+              <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
+                <span style="font-size:.8125rem;color:var(--text-dim)">••••••••</span>
+                <button id="pf-change-pwd-btn" class="pf-btn pf-btn-secondary" style="padding:4px 12px;font-size:.6875rem">Change</button>
+              </div>
+              <div id="pf-pwd-form" style="display:none;margin-top:12px;flex-direction:column;gap:8px">
+                <input class="pf-input" id="pf-pwd-current" type="password" placeholder="Current password" />
+                <input class="pf-input" id="pf-pwd-new" type="password" placeholder="New password (min 8 chars)" />
+                <input class="pf-input" id="pf-pwd-confirm" type="password" placeholder="Confirm new password" />
+                <div style="display:flex;gap:8px;justify-content:flex-end">
+                  <button id="pf-pwd-cancel" class="pf-btn pf-btn-secondary" style="padding:4px 12px;font-size:.6875rem">Cancel</button>
+                  <button id="pf-pwd-submit" class="pf-btn pf-btn-primary" style="padding:4px 12px;font-size:.6875rem">Update Password</button>
+                </div>
+              </div>
+            </div>
+
+            <div style="height:1px;background:var(--bd);margin:12px 0"></div>
+            <div class="pf-field" style="border-bottom:none">
+              <label class="pf-label">Account Status</label>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+                <span id="pf-account-status-indicator" style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block"></span>
+                <span id="pf-account-status-text" style="font-size:.8125rem;color:var(--green)">Active</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Activity History -->
+        <div class="panel-3d pf-section" style="background:var(--blk-surface);border:1px solid var(--bd);border-radius:14px;overflow:hidden">
+          <div class="holo-overlay"></div>
+          <div class="pf-section-header" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--bd)">
+            <span style="font-size:.75rem;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em"><i class="fas fa-clock-rotate" style="margin-right:8px"></i>Recent Activity</span>
+          </div>
+          <div class="pf-section-body" style="padding:8px 20px 12px">
+            <div id="pf-activity-list" style="min-height:60px">
+              <div style="text-align:center;padding:24px 0;color:var(--text-faint);font-size:.75rem">Loading activity...</div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /pf-grid -->
+
+      <!-- ═══ Admin Panel (visible only to admin) ═══ -->
+      <div id="pf-admin-panel" style="display:none;margin-top:20px">
+        <div class="panel-3d pf-section" style="background:var(--blk-surface);border:1px solid red;border-radius:14px;overflow:hidden;border-color:rgba(255,45,85,.3)">
+          <div class="holo-overlay"></div>
+          <div class="pf-section-header" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--bd)">
+            <span style="font-size:.75rem;font-weight:600;color:var(--red);text-transform:uppercase;letter-spacing:.06em"><i class="fas fa-shield-halved" style="margin-right:8px"></i>Admin Control Panel</span>
+          </div>
+          <div class="pf-section-body" style="padding:16px 20px 20px">
+
+            <!-- Role Upgrade Requests -->
+            <div style="margin-bottom:16px">
+              <label class="pf-label">Pending Role Upgrade Requests</label>
+              <div id="pf-admin-requests" style="margin-top:8px;min-height:40px">
+                <div style="text-align:center;padding:16px 0;color:var(--text-faint);font-size:.75rem">Loading...</div>
+              </div>
+            </div>
+
+            <div style="height:1px;background:var(--bd);margin:12px 0"></div>
+
+            <!-- User Management -->
+            <div>
+              <label class="pf-label">User Management</label>
+              <div id="pf-admin-users" style="margin-top:8px;max-height:300px;overflow-y:auto;border:1px solid var(--bd);border-radius:10px">
+                <div style="text-align:center;padding:16px 0;color:var(--text-faint);font-size:.75rem">Loading users...</div>
+              </div>
+            </div>
+
+            <div style="height:1px;background:var(--bd);margin:12px 0"></div>
+
+            <!-- Audit Log -->
+            <div>
+              <label class="pf-label">Audit Log</label>
+              <div id="pf-admin-audit" style="margin-top:8px;max-height:250px;overflow-y:auto;border:1px solid var(--bd);border-radius:10px">
+                <div style="text-align:center;padding:16px 0;color:var(--text-faint);font-size:.75rem">Loading audit logs...</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="toast-container" style="position:fixed;top:72px;right:24px;z-index:10000;display:flex;flex-direction:column;gap:8px;pointer-events:none"></div>
+
+  <style>
+    .pf-section { position:relative }
+    .pf-field { padding:10px 0; border-bottom:1px solid var(--bd) }
+    .pf-label { display:block; font-size:.6875rem; font-weight:600; color:var(--text-faint); text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px }
+    .pf-value { font-size:.8125rem; color:var(--text); padding:6px 0; min-height:20px }
+    .pf-input, .pf-select, .pf-textarea { width:100%; padding:8px 12px; border-radius:8px; border:1px solid var(--bd); background:var(--blk-elevated); color:var(--text); font-size:.8125rem; font-family:inherit; outline:none; transition:border-color .2s var(--ease) }
+    .pf-input:focus, .pf-select:focus, .pf-textarea:focus { border-color:var(--accent) }
+    .pf-select { cursor:pointer; appearance:auto }
+    .pf-textarea { resize:vertical; line-height:1.5 }
+    .pf-btn { padding:8px 16px; border-radius:8px; font-size:.75rem; font-weight:500; cursor:pointer; border:none; transition:all .2s var(--ease); font-family:inherit }
+    .pf-btn-primary { background:var(--accent); color:#fff }
+    .pf-btn-primary:hover { background:#0052cc; transform:translateY(-1px) }
+    .pf-btn-secondary { background:rgba(255,255,255,.05); color:var(--text-dim); border:1px solid var(--bd) }
+    .pf-btn-secondary:hover { background:rgba(255,255,255,.08); color:var(--text) }
+
+    /* Role Badges */
+    .pf-role-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:100px; font-size:.75rem; font-weight:600; text-transform:capitalize }
+    .pf-role-badge.citizen { background:rgba(0,102,255,.12); color:var(--accent); box-shadow:0 0 12px rgba(0,102,255,.08) }
+    .pf-role-badge.authority { background:rgba(245,158,11,.12); color:#f59e0b; box-shadow:0 0 12px rgba(245,158,11,.08) }
+    .pf-role-badge.emergency { background:rgba(239,68,68,.12); color:var(--red); box-shadow:0 0 12px rgba(239,68,68,.08) }
+    .pf-role-badge.admin { background:rgba(239,68,68,.12); color:var(--red); box-shadow:0 0 12px rgba(239,68,68,.12) }
+
+    .pf-verified-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:100px; font-size:.6875rem; font-weight:500; background:rgba(16,185,129,.1); color:var(--green) }
+    .pf-status-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:100px; font-size:.6875rem; font-weight:500 }
+    .pf-status-badge.suspended { background:rgba(239,68,68,.1); color:var(--red) }
+    .pf-status-badge.disabled { background:rgba(239,68,68,.15); color:var(--red) }
+
+    .pf-edit-btn { transition:all .2s var(--ease) }
+    .pf-edit-btn:hover { background:var(--blk-hover); color:var(--text) }
+
+    /* Admin table rows */
+    .pf-admin-row { display:flex; align-items:center; gap:8px; padding:8px 12px; border-bottom:1px solid var(--bd); font-size:.75rem }
+    .pf-admin-row:last-child { border-bottom:none }
+    .pf-admin-row:hover { background:rgba(255,255,255,.02) }
+    .pf-admin-user-role { padding:2px 8px; border-radius:4px; font-size:.625rem; font-weight:600; text-transform:capitalize }
+    .pf-admin-user-role.citizen { background:rgba(0,102,255,.1); color:var(--accent) }
+    .pf-admin-user-role.authority { background:rgba(245,158,11,.1); color:#f59e0b }
+    .pf-admin-user-role.admin { background:rgba(239,68,68,.1); color:var(--red) }
+    .pf-admin-user-role.emergency { background:rgba(239,68,68,.1); color:var(--red) }
+
+    .pf-audit-entry { padding:8px 12px; border-bottom:1px solid var(--bd); font-size:.6875rem; color:var(--text-dim); display:flex; align-items:start; gap:8px }
+    .pf-audit-entry:last-child { border-bottom:none }
+
+    .pf-request-card { padding:10px 12px; border:1px solid var(--bd); border-radius:8px; margin-bottom:6px; display:flex; align-items:center; justify-content:space-between; gap:8px }
+    .pf-request-card:last-child { margin-bottom:0 }
+
+    @media(max-width:768px) {
+      .pf-grid { grid-template-columns:1fr !important }
+      .pf-header { flex-direction:column !important; text-align:center }
+      .pf-completion { display:none }
+    }
+  </style>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="../scripts/auth.js"></script>
+  <script src="../scripts/router.js"></script>
+  <script src="../scripts/http.js"></script>
+  <script src="../scripts/ui.js"></script>
+  <script src="../scripts/navigation.js"></script>
+  <script src="../scripts/realtime.js"></script>
+  <script src="../scripts/notifications.js"></script>
+  <script src="../scripts/app.js"></script>
+  <script src="../scripts/emergency.js"></script>
+  <script src="../scripts/chatbot.js"></script>
+  <script>
+    let _profileLoading = false;
+    let _profileSaveInProgress = false;
+    let _profileDirty = false;
+    let _profileDebounceTimer = null;
+
+    const ROLE_CONFIG = {
+      citizen: { cls: 'citizen', icon: 'fa-user' },
+      authority: { cls: 'authority', icon: 'fa-gavel' },
+      admin: { cls: 'admin', icon: 'fa-shield-halved' },
+      emergency: { cls: 'emergency', icon: 'fa-truck-medical' },
+    };
+
+    const LANG_NAMES = { en:'English', hi:'Hindi', ta:'Tamil', te:'Telugu', bn:'Bengali', mr:'Marathi', gu:'Gujarati' };
+
+    function esc(str) {
+      if (typeof str !== 'string') return str || '';
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    function showProfileSkeleton() {
+      const ids = ['pf-name','pf-email','pf-display-name','pf-display-email','pf-display-phone','pf-display-address','pf-display-emergency','pf-display-language','pf-display-bio'];
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.style.background = 'linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%)';
+          el.style.backgroundSize = '200% 100%';
+          el.style.animation = 'pf-loading 1.5s infinite';
+        }
+      });
+      const avatar = document.getElementById('pf-avatar');
+      if (avatar) avatar.style.background = 'linear-gradient(135deg,rgba(79,70,229,.1),rgba(6,182,212,.1))';
+      if (!document.getElementById('pf-skeleton-style')) {
+        const style = document.createElement('style');
+        style.id = 'pf-skeleton-style';
+        style.textContent = '@keyframes pf-loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }';
+        document.head.appendChild(style);
+      }
+      document.body.classList.add('skeleton-loading');
+    }
+
+    function hideProfileSkeleton() {
+      const ids = ['pf-name','pf-email','pf-display-name','pf-display-email','pf-display-phone','pf-display-address','pf-display-emergency','pf-display-language','pf-display-bio'];
+      ids.forEach(id => { const el = document.getElementById(id); if (el) { el.style.background = ''; el.style.animation = ''; } });
+      const avatar = document.getElementById('pf-avatar');
+      if (avatar) avatar.style.background = '';
+      document.body.classList.remove('skeleton-loading');
+    }
+
+    function setRoleBadge(el, role) {
+      if (!el) return;
+      const cfg = ROLE_CONFIG[role] || ROLE_CONFIG.citizen;
+      el.className = `pf-role-badge ${cfg.cls}`;
+      el.innerHTML = `<i class="fas fa-lock" style="font-size:.625rem;opacity:.6"></i> <span>${role}</span>`;
+    }
+
+    function validateProfileForm(data) {
+      const errors = [];
+      if (!data.name || data.name.length < 2) errors.push('Name must be at least 2 characters');
+      if (data.name && data.name.length > 100) errors.push('Name must be less than 100 characters');
+      if (data.phone && !/^[\d\s\-+()]{6,20}$/.test(data.phone)) errors.push('Invalid phone number format');
+      if (data.emergency_contact && !/^[\d\s\-+()]{6,20}$/.test(data.emergency_contact)) errors.push('Invalid emergency contact format');
+      if (data.bio && data.bio.length > 500) errors.push('Bio must be less than 500 characters');
+      return errors;
+    }
+
+    function getProfileCompletion(p) {
+      const fields = [p.name, p.phone, p.address, p.emergency_contact, p.language, p.bio];
+      const filled = fields.filter(f => f && f !== 'Not set' && f !== 'No bio' && f !== '').length;
+      return Math.round((filled / fields.length) * 100);
+    }
+
+    function updateCompletionRing(pct) {
+      const ring = document.getElementById('pf-ring-fill');
+      const pctEl = document.getElementById('pf-completion-pct');
+      if (!ring || !pctEl) return;
+      const circumference = 151;
+      const offset = circumference - (pct / 100) * circumference;
+      ring.style.strokeDashoffset = offset;
+      pctEl.textContent = pct + '%';
+    }
+
+    async function loadProfile() {
+      if (_profileLoading) return;
+      _profileLoading = true;
+      showProfileSkeleton();
+
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const data = await apiFetch('/profile');
+          window._profileData = data.profile;
+          renderProfile(window._profileData);
+          loadActivity();
+          if (window._profileData.role === 'admin') loadAdminPanel();
+          loadUpgradeRequests();
+          loadGovRequestStatus(data.profile?.email || getSession().user?.email);
+          hideProfileSkeleton();
+          return;
+        } catch (e) {
+          if (attempt === 0) { await new Promise(r => setTimeout(r, 1500)); continue; }
+          hideProfileSkeleton();
+          const nameEl = document.getElementById('pf-name');
+          if (nameEl) {
+            nameEl.textContent = 'Unable to load profile';
+            nameEl.style.color = 'var(--red)';
+          }
+          showToast('Unable to load profile. Please refresh or try again.', 'error');
+        }
+      } finally {
+        _profileLoading = false;
+      }
+    }
+
+    function renderProfile(p) {
+      if (!p) return;
+      const name = p.name || 'User';
+      const email = p.email || '';
+      const role = p.role || 'citizen';
+
+      safeSet('pf-name', name);
+      safeSet('pf-email', email);
+      safeSet('pf-display-name', name);
+      safeSet('pf-display-email', email);
+      safeSetVal('pf-input-name', name);
+
+      safeSet('pf-display-phone', p.phone || 'Not set');
+      safeSetVal('pf-input-phone', p.phone || '');
+
+      safeSet('pf-display-address', p.address || 'Not set');
+      safeSetVal('pf-input-address', p.address || '');
+
+      safeSet('pf-display-emergency', p.emergency_contact || 'Not set');
+      safeSetVal('pf-input-emergency', p.emergency_contact || '');
+
+      const langDisplay = LANG_NAMES[p.language] || p.language || 'English';
+      safeSet('pf-display-language', langDisplay);
+      safeSetVal('pf-input-language', p.language || 'en');
+
+      safeSet('pf-display-bio', p.bio || 'No bio');
+      safeSetVal('pf-input-bio', p.bio || '');
+
+      setRoleBadge(document.getElementById('pf-role-badge'), role);
+      setRoleBadge(document.getElementById('pf-role-badge-lg'), role);
+      safeSet('pf-role-text', role);
+      safeSet('pf-role-text-lg', role);
+
+      const vBadge = document.getElementById('pf-verified-badge');
+      const vStatus = document.getElementById('pf-verification-status');
+      if (p.is_verified) {
+        if (vBadge) { vBadge.style.display = 'inline-flex'; vBadge.innerHTML = '<i class="fas fa-check-circle"></i> Verified'; }
+        if (vStatus) { vStatus.innerHTML = '<i class="fas fa-check-circle"></i> Verified'; vStatus.style.background = 'rgba(16,185,129,.1)'; vStatus.style.color = 'var(--green)'; }
+      } else if (p.is_authority_verified) {
+        if (vBadge) { vBadge.style.display = 'inline-flex'; vBadge.innerHTML = '<i class="fas fa-certificate"></i> Authority Verified'; vBadge.style.background = 'rgba(245,158,11,.1)'; vBadge.style.color = '#f59e0b'; }
+        if (vStatus) { vStatus.innerHTML = '<i class="fas fa-certificate"></i> Authority Verified'; vStatus.style.background = 'rgba(245,158,11,.1)'; vStatus.style.color = '#f59e0b'; }
+      } else {
+        if (vBadge) vBadge.style.display = 'none';
+        if (vStatus) { vStatus.innerHTML = '<i class="fas fa-clock"></i> Pending'; vStatus.style.background = 'rgba(255,255,255,.05)'; vStatus.style.color = 'var(--text-faint)'; }
+      }
+
+      const status = p.account_status || 'active';
+      const statusText = document.getElementById('pf-account-status-text');
+      const statusDot = document.getElementById('pf-account-status-indicator');
+      if (status === 'active') {
+        if (statusDot) statusDot.style.background = 'var(--green)';
+        if (statusText) { statusText.textContent = 'Active'; statusText.style.color = 'var(--green)'; }
+      } else {
+        if (statusDot) statusDot.style.background = 'var(--red)';
+        if (statusText) { statusText.textContent = status.charAt(0).toUpperCase() + status.slice(1); statusText.style.color = 'var(--red)'; }
+      }
+
+      const pct = getProfileCompletion(p);
+      updateCompletionRing(pct);
+
+      const avatarIcon = document.getElementById('pf-avatar-icon');
+      const avatarImg = document.getElementById('pf-avatar-img');
+      if (p.avatar_url) {
+        if (avatarIcon) avatarIcon.style.display = 'none';
+        if (avatarImg) { avatarImg.style.display = 'block'; avatarImg.src = p.avatar_url; }
+      } else {
+        if (avatarIcon) avatarIcon.style.display = 'flex';
+        if (avatarImg) { avatarImg.style.display = 'none'; avatarImg.src = ''; }
+      }
+
+      const upgradeSection = document.getElementById('pf-upgrade-section');
+      if (upgradeSection) upgradeSection.style.display = role === 'citizen' ? 'block' : 'none';
+
+      const adminPanel = document.getElementById('pf-admin-panel');
+      if (adminPanel) adminPanel.style.display = role === 'admin' ? 'block' : 'none';
+    }
+
+    function safeSet(id, val) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    }
+
+    function safeSetVal(id, val) {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    }
+
+    function getFormData() {
+      return {
+        name: document.getElementById('pf-input-name')?.value.trim() || '',
+        phone: document.getElementById('pf-input-phone')?.value.trim() || '',
+        address: document.getElementById('pf-input-address')?.value.trim() || '',
+        emergency_contact: document.getElementById('pf-input-emergency')?.value.trim() || '',
+        language: document.getElementById('pf-input-language')?.value || 'en',
+        bio: document.getElementById('pf-input-bio')?.value.trim() || '',
+      };
+    }
+
+    function setFormDisabled(disabled) {
+      document.querySelectorAll('.pf-input').forEach(el => el.disabled = disabled);
+      const saveBtn = document.getElementById('pf-save-btn');
+      const cancelBtn = document.getElementById('pf-cancel-btn');
+      if (saveBtn) saveBtn.disabled = disabled;
+      if (cancelBtn) cancelBtn.disabled = disabled;
+    }
+
+    // ═══ Edit Toggle ═══
+    document.getElementById('pf-edit-toggle')?.addEventListener('click', function() {
+      const isEditing = this.dataset.editing === 'true';
+      const fields = ['name', 'phone', 'address', 'emergency', 'language', 'bio'];
+
+      if (isEditing) {
+        // Cancel editing - reset form to saved data
+        document.getElementById('pf-edit-toggle').textContent = 'Edit';
+        fields.forEach(f => {
+          const display = document.getElementById(`pf-display-${f}`);
+          const input = document.getElementById(`pf-input-${f}`);
+          if (display) display.style.display = 'block';
+          if (input) input.style.display = 'none';
+        });
+        const actions = document.getElementById('pf-edit-actions');
+        if (actions) actions.style.display = 'none';
+        document.getElementById('pf-edit-toggle').dataset.editing = 'false';
+        if (window._profileData) renderProfile(window._profileData);
+      } else {
+        document.getElementById('pf-edit-toggle').textContent = 'Cancel';
+        fields.forEach(f => {
+          const display = document.getElementById(`pf-display-${f}`);
+          const input = document.getElementById(`pf-input-${f}`);
+          if (display) display.style.display = 'none';
+          if (input) {
+            input.style.display = 'block';
+            input.disabled = false;
+          }
+        });
+        const actions = document.getElementById('pf-edit-actions');
+        if (actions) actions.style.display = 'flex';
+        document.getElementById('pf-edit-toggle').dataset.editing = 'true';
+      }
+    });
+
+    // ═══ Cancel Edit ═══
+    document.getElementById('pf-cancel-btn')?.addEventListener('click', function() {
+      document.getElementById('pf-edit-toggle').click();
+      if (window._profileData) renderProfile(window._profileData);
+    });
+
+    // ═══ Save Profile ═══
+    document.getElementById('pf-save-btn')?.addEventListener('click', async function() {
+      if (_profileSaveInProgress) return;
+      const data = getFormData();
+      const errors = validateProfileForm(data);
+      if (errors.length > 0) {
+        showToast(errors[0], 'warning');
+        return;
+      }
+
+      _profileSaveInProgress = true;
+      const btn = this;
+      const origHtml = btn.innerHTML;
+      btn.innerHTML = '<span class="spin" style="width:16px;height:16px;display:inline-block;vertical-align:middle;margin-right:8px"></span>Saving...';
+      btn.disabled = true;
+
+      try {
+        const result = await updateProfile(data);
+        window._profileData = result.profile;
+        renderProfile(window._profileData);
+        document.getElementById('pf-edit-toggle').click();
+        showToast('Profile updated successfully', 'success');
+      } catch (e) {
+        showToast(e.message || 'Failed to update profile', 'error');
+      } finally {
+        _profileSaveInProgress = false;
+        btn.innerHTML = origHtml;
+        btn.disabled = false;
+      }
+    });
+
+    // ═══ Input validation feedback ═══
+    document.querySelectorAll('.pf-input').forEach(input => {
+      input.addEventListener('input', function() {
+        this.style.borderColor = this.value.length > 0 ? 'var(--accent)' : 'var(--bd)';
+      });
+    });
+
+    // ═══ Password Change ═══
+    document.getElementById('pf-change-pwd-btn')?.addEventListener('click', () => {
+      document.getElementById('pf-pwd-form').style.display = 'flex';
+    });
+
+    document.getElementById('pf-pwd-cancel')?.addEventListener('click', () => {
+      document.getElementById('pf-pwd-form').style.display = 'none';
+      ['pf-pwd-current', 'pf-pwd-new', 'pf-pwd-confirm'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+    });
+
+    document.getElementById('pf-pwd-submit')?.addEventListener('click', async function() {
+      const current = document.getElementById('pf-pwd-current')?.value || '';
+      const newPwd = document.getElementById('pf-pwd-new')?.value || '';
+      const confirm = document.getElementById('pf-pwd-confirm')?.value || '';
+
+      if (!current || !newPwd) { showToast('Fill all fields', 'warning'); return; }
+      if (newPwd.length < 8) { showToast('Password must be at least 8 characters', 'warning'); return; }
+      if (newPwd !== confirm) { showToast('Passwords do not match', 'error'); return; }
+
+      try {
+        await changePassword(current, newPwd);
+        showToast('Password changed successfully', 'success');
+        document.getElementById('pf-pwd-cancel').click();
+      } catch (e) {
+        showToast(e.message || 'Failed to change password', 'error');
+      }
+    });
+
+    // ═══ Avatar Upload with Preview ═══
+    document.getElementById('pf-avatar-input')?.addEventListener('change', async function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) { showToast('Avatar must be under 5MB', 'warning'); this.value = ''; return; }
+      const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowed.includes(file.type)) { showToast('Avatar must be JPEG, PNG, GIF, or WebP', 'warning'); this.value = ''; return; }
+
+      // Show preview immediately
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        const img = document.getElementById('pf-avatar-img');
+        const icon = document.getElementById('pf-avatar-icon');
+        if (img) { img.style.display = 'block'; img.src = ev.target.result; }
+        if (icon) icon.style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+
+      // Then upload
+      try {
+        const result = await uploadProfileAvatar(file);
+        if (window._profileData) {
+          window._profileData.avatar_url = result.avatar_url;
+        }
+        showToast('Avatar updated', 'success');
+      } catch (err) {
+        showToast(err.message || 'Failed to upload avatar', 'error');
+        // Revert preview
+        if (window._profileData?.avatar_url) {
+          const img = document.getElementById('pf-avatar-img');
+          const icon = document.getElementById('pf-avatar-icon');
+          if (img) { img.src = window._profileData.avatar_url; img.style.display = 'block'; }
+          if (icon) icon.style.display = 'none';
+        } else {
+          const img = document.getElementById('pf-avatar-img');
+          const icon = document.getElementById('pf-avatar-icon');
+          if (img) img.style.display = 'none';
+          if (icon) icon.style.display = 'flex';
+        }
+      }
+      this.value = '';
+    });
+
+    // ═══ Avatar input visual trigger ═══
+    document.querySelector('.pf-avatar-edit')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+
+    // ═══ Role Upgrade Request ═══
+    document.getElementById('pf-upgrade-btn')?.addEventListener('click', async function() {
+      const role = document.getElementById('pf-upgrade-role')?.value;
+      const reason = document.getElementById('pf-upgrade-reason')?.value.trim();
+
+      if (reason.length < 10) { showToast('Please provide a reason (min 10 characters)', 'warning'); return; }
+
+      try {
+        await apiFetch('/roles/request-upgrade', {
+          method: 'POST',
+          body: { requested_role: role, reason },
+        });
+        showToast('Upgrade request submitted for review', 'success');
+        const reasonEl = document.getElementById('pf-upgrade-reason');
+        if (reasonEl) reasonEl.value = '';
+        loadUpgradeRequests();
+      } catch (e) {
+        showToast(e.message || 'Failed to submit upgrade request', 'error');
+      }
+    });
+
+    // ═══ Load Upgrade Requests ═══
+    async function loadUpgradeRequests() {
+      try {
+        const data = await apiFetch('/roles/requests');
+        const container = document.getElementById('pf-requests-list');
+        const statusSection = document.getElementById('pf-requests-status');
+        if (data.requests && data.requests.length > 0) {
+          statusSection.style.display = 'block';
+          container.innerHTML = data.requests.map(r => {
+            const colors = { pending: 'var(--amber)', approved: 'var(--green)', rejected: 'var(--red)' };
+            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-size:.75rem">
+              <span style="text-transform:capitalize">${esc(r.requested_role)}</span>
+              <span style="color:${colors[r.status] || 'var(--text-dim)'};font-weight:600">${esc(r.status)}</span>
+            </div>`;
+          }).join('');
+        } else {
+          statusSection.style.display = 'none';
+        }
+      } catch (e) {}
+    }
+
+    // ═══ Government Access Request Status ═══
+    async function loadGovRequestStatus(email) {
+      if (!email) return;
+      try {
+        const data = await apiFetch(`/gov/request-status?email=${encodeURIComponent(email)}`);
+        const section = document.getElementById('pf-gov-request-section');
+        const statusEl = document.getElementById('pf-gov-request-status');
+        if (data.status && data.status !== 'not_found') {
+          section.style.display = 'block';
+          const cfg = {
+            pending: { bg: 'rgba(245,158,11,.1)', color: '#f59e0b', icon: 'fa-clock' },
+            verifying: { bg: 'rgba(0,102,255,.1)', color: 'var(--accent)', icon: 'fa-spinner' },
+            approved: { bg: 'rgba(16,185,129,.1)', color: 'var(--green)', icon: 'fa-check-circle' },
+            rejected: { bg: 'rgba(239,68,68,.1)', color: 'var(--red)', icon: 'fa-xmark-circle' },
+            suspended: { bg: 'rgba(239,68,68,.1)', color: 'var(--red)', icon: 'fa-ban' },
+          }[data.status] || { bg: 'rgba(245,158,11,.1)', color: '#f59e0b', icon: 'fa-clock' };
+          statusEl.innerHTML = `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:100px;font-size:.75rem;font-weight:500;background:${cfg.bg};color:${cfg.color}"><i class="fas ${cfg.icon}"></i> ${data.status.replace(/_/g, ' ')}</span>
+            <span style="font-size:.6875rem;color:var(--text-faint)">${data.requested_at ? new Date(data.requested_at).toLocaleDateString() : ''}</span>`;
+        }
+      } catch (e) {}
+    }
+
+    // ═══ Activity History ═══
+    async function loadActivity() {
+      try {
+        const data = await apiFetch('/audit/my-activity?limit=10');
+        const container = document.getElementById('pf-activity-list');
+        if (!container) return;
+        if (data.activity && data.activity.length > 0) {
+          container.innerHTML = data.activity.map(a => {
+            const date = a.created_at ? new Date(a.created_at).toLocaleDateString() : '';
+            return `<div class="pf-audit-entry">
+              <i class="fas fa-circle" style="font-size:.3125rem;color:var(--accent);margin-top:6px;flex-shrink:0"></i>
+              <div>
+                <div style="color:var(--text);font-weight:500">${a.action.replace(/_/g, ' ')}</div>
+                <div style="font-size:.625rem;color:var(--text-faint)">${date}</div>
+              </div>
+            </div>`;
+          }).join('');
+        } else {
+          container.innerHTML = '<div style="text-align:center;padding:16px 0;color:var(--text-faint);font-size:.75rem">No recent activity</div>';
+        }
+      } catch (e) {
+        const container = document.getElementById('pf-activity-list');
+        if (container) container.innerHTML = '<div style="text-align:center;padding:16px 0;color:var(--text-faint);font-size:.75rem">Failed to load activity</div>';
+      }
+    }
+
+    // ═══ Admin Panel ═══
+    async function loadAdminPanel() {
+      loadAdminRequests();
+      loadAdminUsers();
+      loadAdminAudit();
+    }
+
+    async function loadAdminRequests() {
+      try {
+        const data = await apiFetch('/admin/roles/requests?status_filter=pending');
+        const container = document.getElementById('pf-admin-requests');
+        if (!container) return;
+        if (data.requests && data.requests.length > 0) {
+          container.innerHTML = data.requests.map(r => {
+            const date = r.created_at ? new Date(r.created_at).toLocaleDateString() : '';
+            return `<div class="pf-request-card">
+              <div style="flex:1;min-width:0">
+                <div style="font-size:.75rem;font-weight:500;color:var(--text)">${r.requested_role} upgrade</div>
+                <div style="font-size:.625rem;color:var(--text-faint)">User: ${r.user_id?.slice(0,8)}... | ${date}</div>
+                ${r.reason ? `<div style="font-size:.6875rem;color:var(--text-dim);margin-top:2px">"${r.reason}"</div>` : ''}
+              </div>
+              <div style="display:flex;gap:4px;flex-shrink:0">
+                <button class="pf-btn pf-btn-primary" style="padding:4px 10px;font-size:.625rem;background:var(--green)" onclick="reviewRequest('${r.id}','approved')">Approve</button>
+                <button class="pf-btn pf-btn-secondary" style="padding:4px 10px;font-size:.625rem;color:var(--red);border-color:rgba(239,68,68,.3)" onclick="reviewRequest('${r.id}','rejected')">Reject</button>
+              </div>
+            </div>`;
+          }).join('');
+        } else {
+          container.innerHTML = '<div style="text-align:center;padding:10px 0;color:var(--text-faint);font-size:.75rem">No pending requests</div>';
+        }
+      } catch (e) {
+        const el = document.getElementById('pf-admin-requests');
+        if (el) el.innerHTML = `<div style="text-align:center;padding:10px 0;color:var(--text-faint);font-size:.75rem">Failed: ${esc(e.message)}</div>`;
+      }
+    }
+
+    window.reviewRequest = async function(requestId, decision) {
+      try {
+        await apiFetch(`/admin/roles/requests/${requestId}`, {
+          method: 'PATCH',
+          body: { status: decision, review_notes: 'Reviewed via admin panel' },
+        });
+        showToast(`Request ${decision}`, 'success');
+        loadAdminRequests();
+      } catch (e) {
+        showToast(e.message || 'Failed to review request', 'error');
+      }
+    };
+
+    async function loadAdminUsers() {
+      try {
+        const data = await apiFetch('/admin/users');
+        const container = document.getElementById('pf-admin-users');
+        if (!container) return;
+        if (data.users && data.users.length > 0) {
+          container.innerHTML = data.users.map(u => {
+            const name = u.name || 'Unknown';
+            const email = u.email || '';
+            const role = u.role || 'citizen';
+            const status = u.account_status || 'active';
+            return `<div class="pf-admin-row">
+              <div style="flex:1;min-width:0">
+                <div style="color:var(--text);font-weight:500;font-size:.75rem">${esc(name)}</div>
+                <div style="font-size:.625rem;color:var(--text-faint)">${esc(email)}</div>
+              </div>
+              <span class="pf-admin-user-role ${role}">${role}</span>
+              <select onchange="changeUserRole('${u.id}', this.value)" style="padding:2px 6px;border-radius:4px;border:1px solid var(--bd);background:var(--blk-elevated);color:var(--text-dim);font-size:.625rem;cursor:pointer">
+                <option value="citizen" ${role==='citizen'?'selected':''}>Citizen</option>
+                <option value="authority" ${role==='authority'?'selected':''}>Authority</option>
+                <option value="admin" ${role==='admin'?'selected':''}>Admin</option>
+                <option value="emergency" ${role==='emergency'?'selected':''}>Emergency</option>
+              </select>
+              ${status !== 'active' ? `<span style="font-size:.625rem;color:var(--red);padding:1px 6px;border-radius:4px;background:rgba(239,68,68,.1)">${status}</span>` : ''}
+            </div>`;
+          }).join('');
+        } else {
+          container.innerHTML = '<div style="text-align:center;padding:10px 0;color:var(--text-faint);font-size:.75rem">No users found</div>';
+        }
+      } catch (e) {
+        const el = document.getElementById('pf-admin-users');
+        if (el) el.innerHTML = `<div style="text-align:center;padding:10px 0;color:var(--text-faint);font-size:.75rem">Failed: ${esc(e.message)}</div>`;
+      }
+    }
+
+    window.changeUserRole = async function(userId, newRole) {
+      try {
+        await adminChangeUserRole(userId, newRole);
+        showToast(`Role updated to ${newRole}`, 'success');
+        loadAdminUsers();
+      } catch (e) {
+        showToast(e.message || 'Failed to update role', 'error');
+        loadAdminUsers();
+      }
+    };
+
+    async function loadAdminAudit() {
+      try {
+        const data = await apiFetch('/audit/log?limit=20');
+        const container = document.getElementById('pf-admin-audit');
+        if (!container) return;
+        if (data.logs && data.logs.length > 0) {
+          container.innerHTML = data.logs.map(l => {
+            const date = l.created_at ? new Date(l.created_at).toLocaleString() : '';
+            return `<div class="pf-audit-entry">
+              <i class="fas fa-shield" style="font-size:.625rem;color:var(--accent);margin-top:4px;flex-shrink:0"></i>
+              <div>
+                <div style="color:var(--text);font-size:.6875rem">${esc(l.action.replace(/_/g, ' '))}</div>
+                <div style="font-size:.5625rem;color:var(--text-faint)">${date} · User: ${(l.user_id||'').slice(0,8)}...</div>
+              </div>
+            </div>`;
+          }).join('');
+        } else {
+          container.innerHTML = '<div style="text-align:center;padding:10px 0;color:var(--text-faint);font-size:.75rem">No audit logs</div>';
+        }
+      } catch (e) {
+        const el = document.getElementById('pf-admin-audit');
+        if (el) el.innerHTML = `<div style="text-align:center;padding:10px 0;color:var(--text-faint);font-size:.75rem">Failed: ${esc(e.message)}</div>`;
+      }
+    }
+
+    // ═══ Init ═══
+    document.addEventListener('DOMContentLoaded', async () => {
+      await waitForAuth();
+      const { user } = getSession();
+
+      if (user) {
+        loadProfile();
+        if (typeof initNotifications === 'function') {
+          initNotifications();
+          const nt = document.getElementById('notif-toggle');
+          if (nt) nt.style.display = 'flex';
+        }
+        if (typeof initRealtime === 'function') {
+          initRealtime();
+        }
+      } else {
+        const nameEl = document.getElementById('pf-name');
+        if (nameEl) nameEl.textContent = 'Please sign in to view your profile';
+      }
+
+      onAuthStateChange((state) => {
+        if (state.user && !window._profileData && !_profileLoading) loadProfile();
+      });
+
+      const adminLink = document.getElementById('admin-sidebar-link');
+      const adminLabel = document.getElementById('admin-section-label');
+      if (adminLink) adminLink.style.display = isAdmin() ? 'flex' : 'none';
+      if (adminLabel) adminLabel.style.display = isAdmin() ? 'block' : 'none';
+
+      const govSidebarLabel = document.getElementById('gov-sidebar-label');
+      const govLinks = document.querySelectorAll('.gov-sidebar-link');
+      if (govSidebarLabel) govSidebarLabel.style.display = isElevated() ? 'block' : 'none';
+      if (govLinks.length) govLinks.forEach(l => l.style.display = isElevated() ? 'flex' : 'none');
+    });
+
+    const __pfStyle = document.createElement('style');
+    __pfStyle.textContent = `@keyframes slideIn { from { opacity:0; transform:translateX(20px) } to { opacity:1; transform:translateX(0) } }`;
+    document.head.appendChild(__pfStyle);
+  </script>
+</body>
+</html>

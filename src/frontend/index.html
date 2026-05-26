@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="AccelerateZero — AI-powered road safety and emergency intelligence platform. Real-time hazard detection, smart reporting, and zero accident vision." />
+  <meta name="theme-color" content="#05070e" />
+  <title>AccelerateZero — AI Road Safety Intelligence Platform</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="styles/main.css" />
+  <link rel="icon" type="image/png" href="images/logo.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+</head>
+<body>
+  <div id="particles-canvas"></div>
+
+  <!-- Public Dock -->
+  <div class="dock landing-dock">
+    <div class="dock-inner">
+      <a href="/" class="dock-brand">
+        <img src="images/logo.png" alt="AccelerateZero" class="az-mark-img" />
+        <span style="letter-spacing:-0.02em">AccelerateZero</span>
+      </a>
+      <nav class="dock-nav">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#safety-insights">Safety Insights</a>
+        <a href="#about">About</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <div class="dock-actions">
+        <a href="/pages/emergency.html" style="color:var(--red);font-weight:600"><i class="fas fa-exclamation-triangle" style="margin-right:4px;font-size:0.625rem"></i> SOS</a>
+        <div id="auth-buttons" class="flex items-center gap-8">
+          <a href="pages/login.html" class="btn btn-ghost" style="font-size:0.8125rem">Sign In</a>
+          <a href="pages/register.html" class="btn btn-primary btn-sm">Get Started</a>
+        </div>
+        <div id="notif-toggle" style="position:relative;cursor:pointer;width:32px;height:32px;display:none;align-items:center;justify-content:center;border-radius:8px;transition:background 0.2s var(--ease)" onclick="Notifications.toggle()" title="Notifications">
+          <i class="fas fa-bell" style="font-size:0.8125rem;color:var(--text-dim)"></i>
+          <span id="notif-badge" style="display:none;position:absolute;top:-2px;right:-2px;width:16px;height:16px;border-radius:50%;background:var(--red);color:#fff;font-size:0.5625rem;font-weight:700;align-items:center;justify-content:center;border:2px solid var(--blk)">0</span>
+        </div>
+        <div id="user-menu-container" style="display:none" class="relative">
+          <div class="user-menu-trigger" id="user-menu-btn" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 8px;border-radius:8px;transition:background 0.2s var(--ease)">
+            <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#4f46e5,#6366f1);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.6875rem"><i class="fas fa-user"></i></div>
+            <span id="user-name-display" style="font-size:0.8125rem;font-weight:500"></span>
+          </div>
+          <div class="user-menu" id="user-dropdown" style="position:absolute;top:calc(100% + 8px);right:0;min-width:180px;background:var(--blk-elevated);border:1px solid var(--bd);border-radius:12px;padding:8px;display:none;z-index:200">
+            <a href="pages/profile.html" style="display:block;padding:8px 12px;border-radius:8px;font-size:0.8125rem;color:var(--text-dim);transition:all 0.15s var(--ease)"><i class="fas fa-user" style="width:16px;margin-right:8px"></i>Profile</a>
+            <a href="pages/my-reports.html" style="display:block;padding:8px 12px;border-radius:8px;font-size:0.8125rem;color:var(--text-dim);transition:all 0.15s var(--ease)"><i class="fas fa-file-alt" style="width:16px;margin-right:8px"></i>My Reports</a>
+            <a href="pages/dashboard.html" style="display:block;padding:8px 12px;border-radius:8px;font-size:0.8125rem;color:var(--text-dim);transition:all 0.15s var(--ease)"><i class="fas fa-chart-bar" style="width:16px;margin-right:8px"></i>Dashboard</a>
+            <a id="admin-panel-link" href="pages/admin-panel.html" style="display:none;padding:8px 12px;border-radius:8px;font-size:0.8125rem;color:#818cf8;transition:all 0.15s var(--ease)"><i class="fas fa-shield-halved" style="width:16px;margin-right:8px"></i>Admin Panel</a>
+            <div style="height:1px;background:var(--bd);margin:4px 8px"></div>
+            <button id="logout-btn" style="display:block;width:100%;text-align:left;padding:8px 12px;border-radius:8px;font-size:0.8125rem;color:var(--red);background:none;border:none;cursor:pointer;transition:all 0.15s var(--ease)"><i class="fas fa-sign-out-alt" style="width:16px;margin-right:8px"></i>Logout</button>
+          </div>
+        </div>
+      </div>
+      <button class="dock-mobile-toggle" id="dock-mobile-toggle" onclick="document.querySelector('.dock-mobile-nav').classList.toggle('open');this.classList.toggle('open')" aria-label="Toggle menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="24" height="2" rx="2" fill="currentColor"></rect>
+          <rect y="11" width="24" height="2" rx="2" fill="currentColor"></rect>
+          <rect y="22" width="24" height="2" rx="2" fill="currentColor"></rect>
+        </svg>
+      </button>
+      <div class="dock-mobile">
+        <a href="pages/login.html" class="btn btn-ghost btn-sm"><i class="fas fa-sign-in-alt"></i></a>
+        <a href="pages/register.html" class="btn btn-primary btn-sm">Start</a>
+      </div>
+    </div>
+    <nav class="dock-mobile-nav" id="dock-mobile-nav">
+      <a href="#features" onclick="this.closest('.dock-mobile-nav').classList.remove('open');document.getElementById('dock-mobile-toggle').classList.remove('open')">Features</a>
+      <a href="#how-it-works" onclick="this.closest('.dock-mobile-nav').classList.remove('open');document.getElementById('dock-mobile-toggle').classList.remove('open')">How It Works</a>
+      <a href="#safety-insights" onclick="this.closest('.dock-mobile-nav').classList.remove('open');document.getElementById('dock-mobile-toggle').classList.remove('open')">Safety Insights</a>
+      <a href="#about" onclick="this.closest('.dock-mobile-nav').classList.remove('open');document.getElementById('dock-mobile-toggle').classList.remove('open')">About</a>
+      <a href="#contact" onclick="this.closest('.dock-mobile-nav').classList.remove('open');document.getElementById('dock-mobile-toggle').classList.remove('open')">Contact</a>
+      <div class="dock-mobile-nav-divider"></div>
+      <a href="pages/emergency.html" style="color:var(--red);font-weight:700" onclick="this.closest('.dock-mobile-nav').classList.remove('open');document.getElementById('dock-mobile-toggle').classList.remove('open')"><i class="fas fa-exclamation-triangle"></i> SOS Emergency</a>
+      <a href="pages/dashboard.html" onclick="this.closest('.dock-mobile-nav').classList.remove('open');document.getElementById('dock-mobile-toggle').classList.remove('open')"><i class="fas fa-chart-bar"></i> Dashboard</a>
+    </nav>
+  </div>
+
+  <!-- Hero -->
+  <header class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-container shell">
+    <div class="hero-content">
+      <div class="hero-left anim-up">
+        <div class="hero-badge">
+          <span class="pulse"></span>
+          AI-Powered Road Safety Intelligence
+        </div>
+        <h1 class="f1">
+          Accelerating Toward<br />
+          <span class="gradient">Zero Accidents</span>
+        </h1>
+        <p>
+          Report road hazards, track resolution in real-time, and contribute to safer roads with AI-powered analysis and civic collaboration. Our mission: zero road fatalities through intelligent prevention.
+        </p>
+        <div class="hero-cta">
+          <a href="pages/register.html" class="btn btn-primary btn-xl">
+            <i class="fas fa-rocket"></i> Get Started Free
+          </a>
+          <a href="#features" class="btn btn-secondary btn-xl">
+            Learn More <i class="fas fa-arrow-right" style="font-size:0.8125rem"></i>
+          </a>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="hero-visual">
+          <div class="hero-visual-svg">
+            <!-- SVG content unchanged -->
+            <svg viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+              <!-- (SVG content omitted for brevity) -->
+            </svg>
+          </div>
+          <div class="hero-ring"></div>
+          <div class="hero-ring"></div>
+          <div class="hero-ring"></div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat anim-up stagger-2" id="total-reports">
+        <div class="hero-stat-value gradient">--</div>
+        <div class="hero-stat-label">Total Reports</div>
+      </div>
+      <div class="hero-stat anim-up stagger-3" id="resolved-reports">
+        <div class="hero-stat-value" style="color:var(--green)">--</div>
+        <div class="hero-stat-label">Resolved</div>
+      </div>
+      <div class="hero-stat anim-up stagger-4" id="active-users">
+        <div class="hero-stat-value" style="color:var(--cyan)">--</div>
+        <div class="hero-stat-label">Active Users</div>
+      </div>
+      <div class="hero-stat anim-up stagger-5" id="resolution-rate">
+        <div class="hero-stat-value gradient-amber">--</div>
+        <div class="hero-stat-label">Resolution Rate</div>
+      </div>
+    </div>
+  </div>
+</header>
+    
+    
+    
+      
+        
+          
+          
+            
+            AI-Powered Road Safety Intelligence
+          </div>
+          <h1 class="f1">
+            Accelerating Toward
+            <br/>
+            <span class="gradient">Zero Accidents</span>
+          </h1>
+          <p>
+            Report road hazards, track resolution in real-time, and contribute to safer roads with AI-powered analysis and civic collaboration. Our mission: zero road fatalities through intelligent prevention.
+          </p>
+          <div class="hero-cta">
+            <a href="pages/register.html" class="btn btn-primary btn-xl">
+              <i class="fas fa-rocket"></i> Get Started Free
+            </a>
+            <a href="#features" class="btn btn-secondary btn-xl">
+              Learn More <i class="fas fa-arrow-right" style="font-size:0.8125rem"></i>
+            </a>
+          </div>
+        </div>
+        
+          
+            <div class="hero-visual-svg">
+              <!-- AI-Powered Road Network Visualization -->
+              <svg viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+                <defs>
+                  <linearGradient id="roadGlow" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#0066ff" stop-opacity="0.15"/>
+                    <stop offset="50%" stop-color="#00d4ff" stop-opacity="0.08"/>
+                    <stop offset="100%" stop-color="#0066ff" stop-opacity="0"/>
+                  </linearGradient>
+                  <linearGradient id="roadGlow2" x1="1" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#00d4ff" stop-opacity="0.12"/>
+                    <stop offset="100%" stop-color="#0066ff" stop-opacity="0"/>
+                  </linearGradient>
+                  <filter id="glow">
+                    <feGaussianBlur stdDeviation="3" result="blur"/>
+                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                  </filter>
+                  <filter id="glowStrong">
+                    <feGaussianBlur stdDeviation="6" result="blur"/>
+                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                  </filter>
+                  <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(0,102,255,0.04)" stroke-width="0.5"/>
+                  </pattern>
+                </defs>
+
+                <!-- Background grid -->
+                <rect width="500" height="500" fill="url(#grid)"/>
+
+                <!-- Scan rings -->
+                <circle cx="250" cy="250" r="220" fill="none" stroke="rgba(0,102,255,0.04)" stroke-width="1" stroke-dasharray="4 8" opacity="0.6">
+                  <animateTransform attributeName="transform" type="rotate" from="0 250 250" to="360 250 250" dur="30s" repeatCount="indefinite"/>
+                </circle>
+                <circle cx="250" cy="250" r="160" fill="none" stroke="rgba(0,212,255,0.03)" stroke-width="0.5" stroke-dasharray="2 6" opacity="0.4">
+                  <animateTransform attributeName="transform" type="rotate" from="360 250 250" to="0 250 250" dur="25s" repeatCount="indefinite"/>
+                </circle>
+
+                <!-- AI scan pulse -->
+                <circle cx="250" cy="250" r="40" fill="none" stroke="var(--accent)" stroke-width="1.5" opacity="0.3" filter="url(#glow)">
+                  <animate attributeName="r" values="40;120;40" dur="4s" repeatCount="indefinite"/>
+                  <animate attributeName="opacity" values="0.3;0;0.3" dur="4s" repeatCount="indefinite"/>
+                </circle>
+
+                <!-- Road network - main arteries -->
+                <path d="M 50 250 Q 150 250 250 200 Q 350 150 450 250" stroke="#0066ff" stroke-width="2" opacity="0.4" fill="none" stroke-dasharray="6 3">
+                  <animate attributeName="stroke-dashoffset" values="0;-18" dur="2s" repeatCount="indefinite"/>
+                </path>
+                <path d="M 50 320 Q 180 300 250 350 Q 320 400 450 320" stroke="#00d4ff" stroke-width="1.5" opacity="0.3" fill="none" stroke-dasharray="4 4">
+                  <animate attributeName="stroke-dashoffset" values="0;-16" dur="2.5s" repeatCount="indefinite"/>
+                </path>
+                <path d="M 100 100 Q 180 180 250 250 Q 320 320 400 400" stroke="#0066ff" stroke-width="1.5" opacity="0.25" fill="none" stroke-dasharray="3 5">
+                  <animate attributeName="stroke-dashoffset" values="0;-16" dur="3s" repeatCount="indefinite"/>
+                </path>
+                <path d="M 400 100 Q 320 180 250 250 Q 180 320 100 400" stroke="#00d4ff" stroke-width="1" opacity="0.2" fill="none" stroke-dasharray="2 4">
+                  <animate attributeName="stroke-dashoffset" values="0;-12" dur="3.5s" repeatCount="indefinite"/>
+                </path>
+
+                <!-- Secondary roads -->
+                <path d="M 150 50 L 150 450" stroke="rgba(0,102,255,0.15)" stroke-width="1" stroke-dasharray="2 4" fill="none">
+                  <animate attributeName="stroke-dashoffset" values="0;-12" dur="4s" repeatCount="indefinite"/>
+                </path>
+                <path d="M 350 50 L 350 450" stroke="rgba(0,212,255,0.12)" stroke-width="1" stroke-dasharray="2 4" fill="none">
+                  <animate attributeName="stroke-dashoffset" values="0;-12" dur="3s" repeatCount="indefinite"/>
+                </path>
+
+                <!-- Intersection nodes (hazard points) -->
+                <circle cx="250" cy="200" r="4" fill="var(--amber)" filter="url(#glow)" opacity="0.8">
+                  <animate attributeName="opacity" values="0.8;0.3;0.8" dur="2s" repeatCount="indefinite"/>
+                </circle>
+                <circle cx="250" cy="350" r="3" fill="var(--green)" filter="url(#glow)" opacity="0.6"/>
+                <circle cx="180" cy="180" r="3" fill="var(--accent)" filter="url(#glow)" opacity="0.5"/>
+                <circle cx="320" cy="180" r="3" fill="var(--accent-secondary)" filter="url(#glow)" opacity="0.5"/>
+                <circle cx="180" cy="320" r="3" fill="var(--green)" filter="url(#glow)" opacity="0.4"/>
+                <circle cx="320" cy="320" r="3" fill="var(--accent)" filter="url(#glow)" opacity="0.5"/>
+
+                <!-- AI detection overlay zones -->
+                <rect x="200" y="150" width="100" height="100" rx="8" fill="rgba(0,102,255,0.03)" stroke="rgba(0,102,255,0.15)" stroke-width="0.5" stroke-dasharray="2 3"/>
+                <rect x="150" y="280" width="80" height="60" rx="6" fill="rgba(0,212,255,0.02)" stroke="rgba(0,212,255,0.1)" stroke-width="0.5" stroke-dasharray="2 3"/>
+
+                <!-- Moving vehicles -->
+                <circle r="3" fill="#0066ff" filter="url(#glowStrong)" opacity="0.9">
+                  <animateMotion dur="4s" repeatCount="indefinite" path="M 50 250 Q 150 250 250 200 Q 350 150 450 250"/>
+                </circle>
+                <circle r="2.5" fill="#00d4ff" filter="url(#glow)" opacity="0.7">
+                  <animateMotion dur="5s" repeatCount="indefinite" path="M 50 320 Q 180 300 250 350 Q 320 400 450 320"/>
+                </circle>
+                <circle r="2" fill="#00e676" filter="url(#glow)" opacity="0.6">
+                  <animateMotion dur="6s" repeatCount="indefinite" path="M 100 100 Q 180 180 250 250 Q 320 320 400 400"/>
+                </circle>
+
+                <!-- Center shield hub -->
+                <circle cx="250" cy="250" r="28" fill="rgba(0,102,255,0.06)" stroke="rgba(0,102,255,0.15)" stroke-width="1"/>
+                <circle cx="250" cy="250" r="20" fill="rgba(0,102,255,0.08)" stroke="rgba(0,212,255,0.1)" stroke-width="0.5"/>
+                <text x="250" y="256" text-anchor="middle" fill="#4d8bff" font-size="18" font-family="'Font Awesome 6 Free'">&#xf3ed;</text>
+
+                <!-- Data flow particles -->
+                <circle r="1.5" fill="var(--accent-secondary)" opacity="0.6">
+                  <animateMotion dur="8s" repeatCount="indefinite" path="M 250 250 Q 350 150 450 100"/>
+                </circle>
+                <circle r="1" fill="var(--accent)" opacity="0.4">
+                  <animateMotion dur="7s" repeatCount="indefinite" path="M 250 250 Q 150 150 50 100"/>
+                </circle>
+
+                <!-- Holographic corner brackets -->
+                <path d="M 30 30 L 30 50 M 30 30 L 50 30" stroke="rgba(0,102,255,0.2)" stroke-width="1" fill="none"/>
+                <path d="M 470 30 L 470 50 M 470 30 L 450 30" stroke="rgba(0,102,255,0.2)" stroke-width="1" fill="none"/>
+                <path d="M 30 470 L 30 450 M 30 470 L 50 470" stroke="rgba(0,102,255,0.2)" stroke-width="1" fill="none"/>
+                <path d="M 470 470 L 470 450 M 470 470 L 450 470" stroke="rgba(0,102,255,0.2)" stroke-width="1" fill="none"/>
+              </svg>
+            </div>
+            <div class="hero-ring"></div>
+            <div class="hero-ring"></div>
+            <div class="hero-ring"></div>
+          </div>
+        </div>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat anim-up stagger-2">
+          <div class="hero-stat-value gradient" id="total-reports">--</div>
+          <div class="hero-stat-label">Total Reports</div>
+        </div>
+        <div class="hero-stat anim-up stagger-3">
+          <div class="hero-stat-value" style="color:var(--green)" id="resolved-reports">--</div>
+          <div class="hero-stat-label">Resolved</div>
+        </div>
+        <div class="hero-stat anim-up stagger-4">
+          <div class="hero-stat-value" style="color:var(--cyan)" id="active-users">--</div>
+          <div class="hero-stat-label">Active Users</div>
+        </div>
+        <div class="hero-stat anim-up stagger-5">
+          <div class="hero-stat-value gradient-amber" id="resolution-rate">--</div>
+          <div class="hero-stat-label">Resolution Rate</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="section" id="features">
+    <div class="section-wave"></div>
+    <div class="shell">
+      <div class="section-label">Platform Features</div>
+      <div class="features">
+        <div class="feature-card anim-up stagger-2">
+          <div class="glow" style="background:var(--accent);right:auto;left:0"></div>
+          <div class="icon" style="background:rgba(79,70,229,0.1);color:#818cf8"><i class="fas fa-camera"></i></div>
+          <h3>Capture & Report</h3>
+          <p>Take a photo or describe a road hazard. Add location details and submit in seconds. Every report helps build a safer community.</p>
+        </div>
+        <div class="feature-card anim-up stagger-3">
+          <div class="glow" style="background:var(--cyan)"></div>
+          <div class="icon" style="background:rgba(6,182,212,0.1);color:#22d3ee"><i class="fas fa-brain"></i></div>
+          <h3>AI Analysis</h3>
+          <p>Our engine classifies severity, categorizes issues, and routes reports to the right department automatically.</p>
+        </div>
+        <div class="feature-card anim-up stagger-4">
+          <div class="glow" style="background:var(--green);right:auto;left:0"></div>
+          <div class="icon" style="background:rgba(16,185,129,0.1);color:#34d399"><i class="fas fa-check-circle"></i></div>
+          <h3>Track & Resolve</h3>
+          <p>Monitor status in real-time. Get notified when your issue is assigned, in progress, and resolved by authorities.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="section" id="how-it-works">
+    <div class="section-wave"></div>
+    <div class="shell">
+      <div class="section-label">How It Works</div>
+      <div class="steps-grid">
+        <div class="step-card anim-up stagger-1">
+          <div class="step-num">1</div>
+          <div class="step-icon"><i class="fas fa-camera"></i></div>
+          <h3>Report a Hazard</h3>
+          <p>Snap a photo, describe the issue, and pin the location. It takes under 30 seconds.</p>
+        </div>
+        <div class="step-connector"><i class="fas fa-arrow-right"></i></div>
+        <div class="step-card anim-up stagger-2">
+          <div class="step-num">2</div>
+          <div class="step-icon"><i class="fas fa-brain"></i></div>
+          <h3>AI Analyzes</h3>
+          <p>Our AI classifies severity and routes your report to the right department instantly.</p>
+        </div>
+        <div class="step-connector"><i class="fas fa-arrow-right"></i></div>
+        <div class="step-card anim-up stagger-3">
+          <div class="step-num">3</div>
+          <div class="step-icon"><i class="fas fa-users"></i></div>
+          <h3>Authorities Act</h3>
+          <p>Assigned teams review and take action. You get real-time status updates.</p>
+        </div>
+        <div class="step-connector"><i class="fas fa-arrow-right"></i></div>
+        <div class="step-card anim-up stagger-4">
+          <div class="step-num">4</div>
+          <div class="step-icon"><i class="fas fa-check-circle"></i></div>
+          <h3>Issue Resolved</h3>
+          <p>Track from submission to resolution. Your community gets safer, one report at a time.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Safety Insights -->
+  <section class="section" id="safety-insights" style="padding-bottom:120px">
+    <div class="section-wave"></div>
+    <div class="shell">
+      <div class="insights-grid">
+        <div class="insight-content anim-up">
+          <div class="section-label">Safety Insights</div>
+          <h2 class="f2" style="margin-bottom:16px">Real-time intelligence for <span class="gradient">safer communities</span></h2>
+          <p style="color:var(--text-dim);font-size:1.0625rem;line-height:1.7;max-width:520px;margin-bottom:32px">
+            Our platform aggregates civic reports to identify accident-prone zones, recurring hazards, and infrastructure gaps — empowering authorities with data-driven decisions.
+          </p>
+          <div class="insight-stats">
+            <div class="insight-stat">
+              <span class="insight-stat-icon"><i class="fas fa-bolt"></i></span>
+              <div><strong>AI Classification</strong><span>Automatic severity &amp; category detection</span></div>
+            </div>
+            <div class="insight-stat">
+              <span class="insight-stat-icon" style="background:rgba(6,182,212,0.1);color:var(--cyan)"><i class="fas fa-map-marked-alt"></i></span>
+              <div><strong>Heatmap Analytics</strong><span>Visualize high-risk zones in your city</span></div>
+            </div>
+            <div class="insight-stat">
+              <span class="insight-stat-icon" style="background:rgba(16,185,129,0.1);color:var(--green)"><i class="fas fa-chart-line"></i></span>
+              <div><strong>Resolution Tracking</strong><span>Transparency from report to resolution</span></div>
+            </div>
+          </div>
+          <a href="pages/register.html" class="btn btn-primary btn-lg" style="margin-top:8px">
+            <i class="fas fa-rocket"></i> Join the Platform
+          </a>
+        </div>
+        <div class="insight-visual anim-up stagger-2">
+          <div class="insight-card">
+            <div class="insight-card-header">
+              <span><i class="fas fa-shield-halved" style="color:var(--accent);margin-right:8px"></i>AccelerateZero</span>
+              <span class="badge badge-resolved">Live</span>
+            </div>
+            <div class="insight-card-body">
+              <div class="insight-metric">
+                <span class="insight-metric-value" id="insight-total">--</span>
+                <span class="insight-metric-label">Reports Processed</span>
+              </div>
+              <div class="insight-metric">
+                <span class="insight-metric-value" id="insight-resolved">--</span>
+                <span class="insight-metric-label">Resolved</span>
+              </div>
+              <div class="insight-metric">
+                <span class="insight-metric-value" id="insight-rate">--</span>
+                <span class="insight-metric-label">Resolution Rate</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About -->
+  <section class="section layer-1" id="about">
+    <div class="section-wave"></div>
+    <div class="shell">
+      <div style="max-width:640px;margin:0 auto;text-align:center">
+        <div class="section-label" style="justify-content:center">About AccelerateZero</div>
+        <h2 class="f2" style="margin-bottom:16px">Built for <span class="gradient">civic resilience</span></h2>
+        <p style="color:var(--text-dim);font-size:1rem;line-height:1.7;margin-bottom:32px">
+          AccelerateZero is an intelligent AI-powered road safety platform that bridges citizens and authorities. We use artificial intelligence to detect hazards, automate emergency response, and provide real-time transparency. Our mission is to accelerate toward zero road fatalities through smart prevention.
+        </p>
+        <div class="about-values">
+          <div class="about-value">
+            <i class="fas fa-shield-halved" style="color:var(--accent)"></i>
+            <span>Transparency</span>
+          </div>
+          <div class="about-value">
+            <i class="fas fa-bolt" style="color:var(--cyan)"></i>
+            <span>Speed</span>
+          </div>
+          <div class="about-value">
+            <i class="fas fa-users" style="color:var(--green)"></i>
+            <span>Community</span>
+          </div>
+          <div class="about-value">
+            <i class="fas fa-robot" style="color:var(--amber)"></i>
+            <span>Innovation</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact CTA -->
+  <section class="section" id="contact">
+    <div class="section-wave"></div>
+    <div class="shell">
+      <div style="max-width:520px;margin:0 auto;text-align:center">
+        <h2 class="f3" style="margin-bottom:12px">Ready to make roads safer?</h2>
+        <p style="color:var(--text-dim);font-size:0.9375rem;margin-bottom:28px;line-height:1.7">Join thousands of citizens using AccelerateZero to report and track road safety issues in their community.</p>
+        <a href="pages/register.html" class="btn btn-primary btn-xl">
+          <i class="fas fa-rocket"></i> Get Started Free
+          <i class="fas fa-arrow-right" style="font-size:0.8125rem"></i>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer style="padding:24px 0 96px;border-top:1px solid var(--bd)">
+    <div class="shell flex items-center justify-between flex-wrap gap-16">
+      <div class="flex items-center gap-8">
+        <div style="width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,#4f46e5,#06b6d4);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.5625rem"><i class="fas fa-shield-halved"></i></div>
+        <span class="f7">&copy; 2026 AccelerateZero. All rights reserved.</span>
+      </div>
+      <div class="flex items-center gap-16">
+        <a href="#" class="f6" style="transition:color 0.2s var(--ease)">Privacy</a>
+        <a href="#" class="f6" style="transition:color 0.2s var(--ease)">Terms</a>
+        <a href="mailto:contact@acceleratezero.io" class="f6" style="transition:color 0.2s var(--ease)">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <div id="toast-container" style="position:fixed;top:72px;right:24px;z-index:10000;display:flex;flex-direction:column;gap:8px;pointer-events:none"></div>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/scripts/emergency-sw.js').catch(() => {});
+      });
+    }
+  </script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="scripts/auth.js"></script>
+  <script src="scripts/router.js"></script>
+  <script src="scripts/http.js"></script>
+  <script src="scripts/ui.js"></script>
+  <script src="scripts/navigation.js"></script>
+  <script src="scripts/app.js"></script>
+  <script src="scripts/chatbot.js"></script>
+</body>
+</html>

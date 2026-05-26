@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Incident Map — AccelerateZero</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <link rel="stylesheet" href="../styles/main.css" />
+  <style>
+    #incident-map { width: 100%; height: 100%; background: #07070e; z-index: 1 }
+    .map-wrapper { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 0 }
+    .map-overlay { position: fixed; z-index: 10; pointer-events: none }
+    .map-overlay > * { pointer-events: auto }
+    .map-controls { position: fixed; bottom: 100px; right: 24px; z-index: 15; display: flex; flex-direction: column; gap: 8px; pointer-events: none }
+    .map-controls > * { pointer-events: auto }
+    .map-ctrl-btn { width: 44px; height: 44px; border-radius: 12px; background: var(--blk-elevated); border: 1px solid var(--bd); display: flex; align-items: center; justify-content: center; color: var(--text); cursor: pointer; transition: all 0.2s var(--ease); backdrop-filter: blur(12px) }
+    .map-ctrl-btn:hover { background: var(--blk-hover); border-color: var(--bd-accent) }
+    .map-ctrl-btn.active { background: var(--accent); color: #fff; border-color: var(--accent) }
+    .map-stats { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 15; display: flex; gap: 8px; pointer-events: none }
+    .map-stats > * { pointer-events: auto }
+    .map-stat-chip { padding: 8px 16px; background: var(--blk-elevated); border: 1px solid var(--bd); border-radius: 100px; font-size: 0.75rem; display: flex; align-items: center; gap: 6px; backdrop-filter: blur(12px) }
+    .map-stat-chip .num { font-weight: 700; font-family: var(--mono) }
+    .map-filter-bar { position: fixed; top: 80px; right: 24px; z-index: 15; pointer-events: none }
+    .map-filter-bar > * { pointer-events: auto }
+    .map-filter-btn { width: 44px; height: 44px; border-radius: 12px; background: var(--blk-elevated); border: 1px solid var(--bd); display: flex; align-items: center; justify-content: center; color: var(--text); cursor: pointer; transition: all 0.2s var(--ease) }
+    .map-filter-btn:hover { background: var(--blk-hover) }
+    .map-legend { position: fixed; bottom: 100px; left: 24px; z-index: 15; padding: 16px; background: var(--blk-surface); border: 1px solid var(--bd); border-radius: 12px; min-width: 140px; backdrop-filter: blur(12px); pointer-events: none }
+    .map-legend > * { pointer-events: auto }
+    .map-legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--text-dim); padding: 3px 0 }
+    .map-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0 }
+    .custom-popup .leaflet-popup-content-wrapper { background: var(--blk-surface) !important; color: var(--text) !important; border: 1px solid var(--bd) !important; border-radius: 12px !important; box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important }
+    .custom-popup .leaflet-popup-tip { background: var(--blk-surface) !important; border: 1px solid var(--bd) !important }
+    .custom-popup .leaflet-popup-close-button { color: var(--text-faint) !important }
+    .leaflet-control-zoom a { background: var(--blk-elevated) !important; color: var(--text) !important; border-color: var(--bd) !important }
+    .leaflet-control-zoom a:hover { background: var(--blk-hover) !important }
+    @media(max-width:768px) {
+      .map-stats { top: 70px; flex-wrap: wrap; justify-content: center; padding: 0 12px }
+      .map-legend { display: none }
+      .map-controls { bottom: 80px; right: 12px }
+    }
+  </style>
+</head>
+<body>
+  <div id="particles-canvas"></div>
+
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <a href="/" class="sidebar-brand">
+        <img src="../images/logo.png" alt="" class="sidebar-brand-img" loading="lazy" />
+        <span class="sidebar-brand-name">AccelerateZero</span>
+      </a>
+      <button class="sidebar-close" id="sidebar-close" onclick="document.body.classList.remove('nav-open')" aria-label="Close navigation">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-label">Operations</div>
+      <a href="dashboard.html" class="sidebar-link"><i class="fas fa-chart-bar"></i><span>Dashboard</span></a>
+      <a href="map.html" class="sidebar-link active"><i class="fas fa-map"></i><span>Live Map</span></a>
+      <a href="report.html" class="sidebar-link"><i class="fas fa-plus-circle"></i><span>Report Hazard</span></a>
+      <a href="track.html" class="sidebar-link"><i class="fas fa-search"></i><span>Track Reports</span></a>
+
+      <div class="sidebar-label">Emergency</div>
+      <a href="emergency.html" class="sidebar-link" style="background:rgba(255,45,85,.08);border:1px solid rgba(255,45,85,.15);margin:2px 0;border-radius:8px"><i class="fas fa-exclamation-triangle" style="color:var(--red)"></i><span style="color:var(--red);font-weight:700">SOS Emergency</span><span class="badge-dot" style="background:var(--red);animation:ping 1s infinite"></span></a>
+
+      <div class="sidebar-label">Intelligence</div>
+      <a href="ai-insights.html" class="sidebar-link"><i class="fas fa-brain"></i><span>AI Insights</span></a>
+      <a href="traffic-analytics.html" class="sidebar-link"><i class="fas fa-chart-line"></i><span>Traffic Analytics</span></a>
+      <a href="heatmaps.html" class="sidebar-link"><i class="fas fa-fire"></i><span>Heatmaps</span><span class="badge-dot"></span></a>
+
+      <div class="sidebar-label" id="gov-sidebar-label" style="display:none">Government</div>
+      <a href="budget-infrastructure.html" class="sidebar-link gov-sidebar-link" style="display:none"><i class="fas fa-coins"></i><span>Budget & Infrastructure</span></a>
+      <a href="contractors.html" class="sidebar-link gov-sidebar-link" style="display:none"><i class="fas fa-user-tie"></i><span>Contractors & Tenders</span></a>
+      <a href="authority-data.html" class="sidebar-link gov-sidebar-link" style="display:none"><i class="fas fa-building"></i><span>Authority Data</span></a>
+
+      <div class="sidebar-label" id="admin-section-label" style="display:none">Administration</div>
+      <a href="admin-panel.html" id="admin-sidebar-link" class="sidebar-link" style="display:none"><i class="fas fa-shield-halved"></i><span>Admin Panel</span></a>
+
+      <div class="sidebar-label">Account</div>
+      <a href="profile.html" class="sidebar-link"><i class="fas fa-user"></i><span>Profile</span></a>
+      <a href="my-reports.html" class="sidebar-link"><i class="fas fa-file-alt"></i><span>My Reports</span></a>
+      <a href="settings.html" class="sidebar-link"><i class="fas fa-cog"></i><span>Settings</span></a>
+    </nav>
+    <div class="sidebar-foot">
+      <button class="sidebar-link" id="logout-btn">
+        <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Sidebar Overlay -->
+  <div class="nav-overlay" id="nav-overlay" onclick="document.body.classList.remove('nav-open')"></div>
+
+  <!-- Top Bar -->
+  <div class="topbar" id="topbar">
+    <div class="topbar-left">
+      <button class="nav-toggle" id="nav-toggle" onclick="event.stopPropagation();document.body.classList.toggle('nav-open')" aria-label="Toggle navigation">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="2" rx="2" fill="currentColor"></rect><rect y="11" width="24" height="2" rx="2" fill="currentColor"></rect><rect y="22" width="24" height="2" rx="2" fill="currentColor"></rect></svg>
+      </button>
+      <span class="topbar-title">Incident <span class="highlight">Map</span></span>
+      <span class="topbar-meta"><span class="pulse"></span> Live</span>
+    </div>
+    <div class="topbar-right">
+      <div id="notif-toggle" style="position:relative;cursor:pointer;width:32px;height:32px;display:none;align-items:center;justify-content:center;border-radius:8px;transition:background 0.2s var(--ease)" onclick="Notifications.toggle()" title="Notifications">
+        <i class="fas fa-bell" style="font-size:0.8125rem;color:var(--text-dim)"></i>
+        <span id="notif-badge" style="display:none;position:absolute;top:-2px;right:-2px;width:16px;height:16px;border-radius:50%;background:var(--red);color:#fff;font-size:0.5625rem;font-weight:700;align-items:center;justify-content:center;border:2px solid var(--blk)">0</span>
+      </div>
+      <div id="user-menu-container" style="display:none" class="relative">
+        <div id="user-menu-btn" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 8px;border-radius:8px;transition:background 0.2s var(--ease)">
+          <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#4f46e5,#6366f1);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.6875rem"><i class="fas fa-user"></i></div>
+          <span id="user-name-display" style="font-size:0.8125rem;font-weight:500"></span>
+        </div>
+        <div id="user-dropdown" style="position:absolute;top:calc(100% + 8px);right:0;min-width:180px;background:var(--blk-elevated);border:1px solid var(--bd);border-radius:12px;padding:8px;display:none;z-index:200">
+          <a href="profile.html" style="display:block;padding:8px 12px;border-radius:8px;font-size:0.8125rem;color:var(--text-dim)"><i class="fas fa-user" style="width:16px;margin-right:8px"></i>Profile</a>
+          <a href="my-reports.html" style="display:block;padding:8px 12px;border-radius:8px;font-size:0.8125rem;color:var(--text-dim)"><i class="fas fa-file-alt" style="width:16px;margin-right:8px"></i>My Reports</a>
+          <div style="height:1px;background:var(--bd);margin:4px 8px"></div>
+          <button id="logout-btn-top" style="display:block;width:100%;text-align:left;padding:8px 12px;border-radius:8px;font-size:0.8125rem;color:var(--red);background:none;border:none;cursor:pointer"><i class="fas fa-sign-out-alt" style="width:16px;margin-right:8px"></i>Logout</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottombar" id="mobile-nav">
+    <div class="bottombar-inner">
+      <a href="/"><i class="fas fa-home"></i><span>Home</span></a>
+      <a href="dashboard.html"><i class="fas fa-chart-bar"></i><span>Dashboard</span></a>
+      <a href="map.html" class="active"><i class="fas fa-map"></i><span>Map</span></a>
+      <a href="report.html"><i class="fas fa-plus-circle"></i><span>Report</span></a>
+      <a href="emergency.html"><i class="fas fa-exclamation-triangle" style="color:var(--red)"></i><span style="color:var(--red)">SOS</span></a>
+      <a href="profile.html"><i class="fas fa-user"></i><span>Profile</span></a>
+    </div>
+  </nav>
+
+  <!-- Map Stats Bar -->
+  <div class="map-stats" id="map-stats-bar">
+    <div class="map-stat-chip"><span class="num" id="mstat-total">--</span> Total</div>
+    <div class="map-stat-chip"><span class="num" id="mstat-active" style="color:var(--amber)">--</span> Active</div>
+    <div class="map-stat-chip"><span class="num" id="mstat-resolved" style="color:var(--green)">--</span> Resolved</div>
+  </div>
+
+  <!-- Map Controls -->
+  <div class="map-controls">
+    <button class="map-ctrl-btn" id="map-locate" title="My Location"><i class="fas fa-location-dot"></i></button>
+    <button class="map-ctrl-btn" id="map-heatmap" title="Toggle Heatmap"><i class="fas fa-fire"></i></button>
+    <button id="map-emergency-btn" onclick="window.location.href='emergency.html'" class="map-ctrl-btn" title="Emergency" style="background:rgba(255,45,85,.15);border-color:rgba(255,45,85,.3)"><i class="fas fa-exclamation-triangle" style="color:var(--red)"></i></button>
+    <button class="map-ctrl-btn" id="map-refresh" title="Refresh"><i class="fas fa-sync-alt"></i></button>
+  </div>
+
+  <!-- Legend -->
+  <div class="map-legend">
+    <div class="map-legend-item"><div class="map-legend-dot" style="background:#ef4444"></div>Critical</div>
+    <div class="map-legend-item"><div class="map-legend-dot" style="background:#f59e0b"></div>High</div>
+    <div class="map-legend-item"><div class="map-legend-dot" style="background:#3b82f6"></div>Medium</div>
+    <div class="map-legend-item"><div class="map-legend-dot" style="background:#6b7280"></div>Low</div>
+    <div class="map-legend-item" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--bd)">
+      <div style="width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.5625rem;font-weight:700">3</div>
+      Cluster
+    </div>
+  </div>
+
+  <!-- Map -->
+  <div class="map-wrapper">
+    <div id="incident-map"></div>
+  </div>
+
+  <!-- Notification Panel -->
+  <div id="notif-panel" style="position:fixed;top:72px;right:24px;width:360px;max-height:480px;background:var(--blk-surface);border:1px solid var(--bd);border-radius:16px;box-shadow:var(--shade-lg);z-index:50;display:none;flex-direction:column;overflow:hidden;backdrop-filter:blur(20px)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--bd)">
+      <span class="f5" style="font-weight:600">Notifications</span>
+      <button onclick="Notifications.close()" style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--text-faint);background:none;border:none;cursor:pointer"><i class="fas fa-times" style="font-size:0.75rem"></i></button>
+    </div>
+    <div id="notif-list" style="flex:1;overflow-y:auto;padding:8px 0"></div>
+  </div>
+
+  <div id="toast-container" style="position:fixed;top:72px;right:24px;z-index:10000;display:flex;flex-direction:column;gap:8px;pointer-events:none"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="../scripts/auth.js">
+  <script src="../scripts/router.js"></script>
+  <script src="../scripts/http.js"></script>
+  <script src="../scripts/ui.js"></script>
+  <script src="../scripts/navigation.js"></script>
+  <script src="../scripts/realtime.js"></script>
+  <script src="../scripts/map.js"></script>
+  <script src="../scripts/notifications.js"></script>
+  <script src="../scripts/emergency.js"></script>
+  <script src="../scripts/chatbot.js"></script>
+  <script src="../scripts/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const topLogout = document.getElementById('logout-btn-top');
+      if (topLogout) {
+        topLogout.addEventListener('click', async () => {
+          await logoutUser();
+          window.location.href = '/';
+        });
+      }
+      initNotifications();
+      if (typeof AZMap !== 'undefined') {
+        AZMap.init('incident-map', { locateUser: true });
+        loadMapStats();
+        AZMap.loadIncidents();
+
+        document.getElementById('map-locate')?.addEventListener('click', () => {
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => AZMap.flyTo(pos.coords.latitude, pos.coords.longitude, 15),
+              () => {}
+            );
+          }
+        });
+
+        let heatVisible = false;
+        document.getElementById('map-heatmap')?.addEventListener('click', function() {
+          heatVisible = !heatVisible;
+          this.classList.toggle('active');
+          if (heatVisible) {
+            AZMap.loadHeatmap();
+          } else {
+            if (AZMap.heatLayer) AZMap.map.removeLayer(AZMap.heatLayer);
+          }
+        });
+
+        document.getElementById('map-refresh')?.addEventListener('click', () => {
+          AZMap.loadIncidents();
+          loadMapStats();
+        });
+      }
+
+      const mapToken = getAccessTokenSync();
+      if (typeof RealtimeClient !== 'undefined' && mapToken) {
+        initRealtime();
+        RealtimeClient.on('report_update', () => {
+          AZMap.loadIncidents();
+          loadMapStats();
+        });
+      }
+    });
+
+    async function loadMapStats() {
+      try {
+        const stats = await fetch('/api/v1/map/stats', {
+          headers: (() => { const t = getAccessTokenSync(); return t ? { 'Authorization': `Bearer ${t}` } : {} })(),
+        }).then(r => r.json());
+        document.getElementById('mstat-total').textContent = stats.total || 0;
+        document.getElementById('mstat-active').textContent = stats.active || 0;
+        document.getElementById('mstat-resolved').textContent = stats.resolved || 0;
+      } catch (e) {}
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+/* AccelerateZero enterprise design tokens (extends :root in main.css) */
+:root {
+  --az-surface-0: #05070e;
+  --az-surface-1: #0a0e1a;
+  --az-surface-2: #111827;
+  --az-surface-3: #1a2240;
+  --az-accent-primary: #0066ff;
+  --az-accent-secondary: #00d4ff;
+  --az-motion-fast: 150ms;
+  --az-motion-base: 250ms;
+  --az-motion-slow: 450ms;
+  --az-ease-premium: cubic-bezier(0.22, 1, 0.36, 1);
+  --az-elevation-1: 0 4px 24px rgba(0, 0, 0, 0.35);
+  --az-elevation-2: 0 12px 48px rgba(0, 0, 0, 0.45);
+  --az-glow-operational: 0 0 32px rgba(0, 102, 255, 0.12);
+  --az-grid-unit: 8px;
+  --az-touch-min: 44px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --az-motion-fast: 0ms;
+    --az-motion-base: 0ms;
+    --az-motion-slow: 0ms;
+  }
+}

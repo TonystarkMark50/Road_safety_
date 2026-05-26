@@ -1,0 +1,625 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Command Center â€” AccelerateZero</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="stylesheet" href="../styles/main.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#05070e" />
+</head>
+<body>
+  <div id="particles-canvas"></div>
+
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <a href="/" class="sidebar-brand">
+        <img src="../images/logo.png" alt="" class="sidebar-brand-img" loading="lazy" />
+        <span class="sidebar-brand-name">AccelerateZero</span>
+      </a>
+      <button class="sidebar-close" id="sidebar-close" onclick="document.body.classList.remove('nav-open')" aria-label="Close navigation">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-label">Operations</div>
+      <a href="dashboard.html" class="sidebar-link active"><i class="fas fa-chart-bar"></i><span>Dashboard</span></a>
+      <a href="map.html" class="sidebar-link"><i class="fas fa-map"></i><span>Live Map</span></a>
+      <a href="report.html" class="sidebar-link"><i class="fas fa-plus-circle"></i><span>Report Hazard</span></a>
+      <a href="track.html" class="sidebar-link"><i class="fas fa-search"></i><span>Track Reports</span></a>
+
+      <div class="sidebar-label">Emergency</div>
+      <a href="emergency.html" class="sidebar-link" style="background:rgba(255,45,85,.08);border:1px solid rgba(255,45,85,.15);margin:2px 0;border-radius:8px"><i class="fas fa-exclamation-triangle" style="color:var(--red)"></i><span style="color:var(--red);font-weight:700">SOS Emergency</span><span class="badge-dot" style="background:var(--red);animation:ping 1s infinite"></span></a>
+
+      <div class="sidebar-label">Intelligence</div>
+      <a href="ai-insights.html" class="sidebar-link"><i class="fas fa-brain"></i><span>AI Insights</span></a>
+      <a href="traffic-analytics.html" class="sidebar-link"><i class="fas fa-chart-line"></i><span>Traffic Analytics</span></a>
+      <a href="heatmaps.html" class="sidebar-link"><i class="fas fa-fire"></i><span>Heatmaps</span><span class="badge-dot"></span></a>
+
+      <div class="sidebar-label" id="gov-sidebar-label" style="display:none">Government</div>
+      <a href="budget-infrastructure.html" class="sidebar-link gov-sidebar-link" style="display:none"><i class="fas fa-coins"></i><span>Budget & Infrastructure</span></a>
+      <a href="contractors.html" class="sidebar-link gov-sidebar-link" style="display:none"><i class="fas fa-user-tie"></i><span>Contractors & Tenders</span></a>
+      <a href="authority-data.html" class="sidebar-link gov-sidebar-link" style="display:none"><i class="fas fa-building"></i><span>Authority Data</span></a>
+
+      <div class="sidebar-label" id="admin-section-label" style="display:none">Administration</div>
+      <a href="admin-panel.html" id="admin-sidebar-link" class="sidebar-link" style="display:none"><i class="fas fa-shield-halved"></i><span>Admin Panel</span></a>
+
+      <div class="sidebar-label">Account</div>
+      <a href="profile.html" class="sidebar-link"><i class="fas fa-user"></i><span>Profile</span></a>
+      <a href="my-reports.html" class="sidebar-link"><i class="fas fa-file-alt"></i><span>My Reports</span></a>
+      <a href="settings.html" class="sidebar-link"><i class="fas fa-cog"></i><span>Settings</span></a>
+    </nav>
+    <div class="sidebar-foot">
+      <button class="sidebar-link" id="logout-btn">
+        <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Sidebar Overlay -->
+  <div class="nav-overlay" id="nav-overlay" onclick="document.body.classList.remove('nav-open')"></div>
+
+  <!-- Top Bar -->
+  <div class="topbar" id="topbar">
+      <div class="topbar-left">
+        <button class="nav-toggle" id="nav-toggle" onclick="event.stopPropagation();document.body.classList.toggle('nav-open')" aria-label="Toggle navigation">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="24" height="2" rx="2" fill="currentColor"></rect>
+            <rect y="11" width="24" height="2" rx="2" fill="currentColor"></rect>
+            <rect y="22" width="24" height="2" rx="2" fill="currentColor"></rect>
+          </svg>
+        </button>
+        <span class="topbar-title">Command <span class="highlight">Center</span></span>
+        <span class="topbar-meta"><span class="pulse"></span> System Operational</span>
+      </div>
+    <div class="topbar-right">
+      <div id="notif-toggle" style="position:relative;cursor:pointer;width:32px;height:32px;display:none;align-items:center;justify-content:center;border-radius:8px;transition:background 0.2s var(--ease)" onclick="Notifications.toggle()" title="Notifications">
+        <i class="fas fa-bell" style="font-size:0.8125rem;color:var(--text-dim)"></i>
+        <span id="notif-badge" style="display:none;position:absolute;top:-2px;right:-2px;width:16px;height:16px;border-radius:50%;background:var(--red);color:#fff;font-size:0.5625rem;font-weight:700;align-items:center;justify-content:center;border:2px solid var(--blk)">0</span>
+      </div>
+      <div id="user-menu-container" style="display:none" class="relative">
+        <div id="user-menu-btn" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 8px;border-radius:8px;transition:background 0.2s var(--ease)">
+          <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#4f46e5,#6366f1);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.6875rem"><i class="fas fa-user"></i></div>
+          <span id="user-name-display" style="font-size:0.8125rem;font-weight:500"></span>
+        </div>
+        <div id="user-dropdown" style="position:absolute;top:calc(100% + 8px);right:0;min-width:200px;background:var(--blk-elevated);border:1px solid var(--bd);border-radius:12px;padding:8px;display:none;z-index:200">
+          <a href="dashboard.html" style="display:block;padding:8px 12px;border-radius:8px;font-size:0.8125rem;color:var(--text-dim);transition:all 0.15s var(--ease)"><i class="fas fa-chart-bar" style="width:16px;margin-right:8px"></i>Dashboard</a>
+          <a href="profile.html" style="display:block;padding:8px 12px;border-radius:8px;font-size:0.8125rem;color:var(--text-dim);transition:all 0.15s var(--ease)"><i class="fas fa-user" style="width:16px;margin-right:8px"></i>Profile</a>
+          <a href="my-reports.html" style="display:block;padding:8px 12px;border-radius:8px;font-size:0.8125rem;color:var(--text-dim);transition:all 0.15s var(--ease)"><i class="fas fa-file-alt" style="width:16px;margin-right:8px"></i>My Reports</a>
+          <a href="admin-panel.html" id="user-dropdown-admin" style="display:none;padding:8px 12px;border-radius:8px;font-size:0.8125rem;color:var(--text-dim);transition:all 0.15s var(--ease)"><i class="fas fa-shield-halved" style="width:16px;margin-right:8px"></i>Admin Panel</a>
+          <div style="height:1px;background:var(--bd);margin:4px 8px"></div>
+          <button id="logout-btn-top" style="display:block;width:100%;text-align:left;padding:8px 12px;border-radius:8px;font-size:0.8125rem;color:var(--red);background:none;border:none;cursor:pointer;transition:all 0.15s var(--ease)"><i class="fas fa-sign-out-alt" style="width:16px;margin-right:8px"></i>Logout</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="page-main scene-3d">
+    <div class="cc">
+      <!-- 3D KPI Strip -->
+      <div class="cc-kpis">
+        <div class="kpi-3d">
+          <div class="kpi-accent blue"></div>
+          <div class="kpi-icon blue-bg"><i class="fas fa-flag"></i></div>
+          <div class="kpi-value gradient counter-up" id="ctrl-total">--</div>
+          <div class="kpi-label">Total Reports</div>
+          <div class="kpi-meta"><i class="fas fa-circle" style="font-size:0.3125rem;color:var(--green)"></i> Live tracking</div>
+        </div>
+        <div class="kpi-3d">
+          <div class="kpi-accent green"></div>
+          <div class="kpi-icon green-bg"><i class="fas fa-check-circle"></i></div>
+          <div class="kpi-value" style="color:var(--green)" id="ctrl-resolved">--</div>
+          <div class="kpi-label">Resolved</div>
+          <div class="kpi-meta"><i class="fas fa-arrow-up" style="font-size:0.625rem"></i> +12% this month</div>
+        </div>
+        <div class="kpi-3d">
+          <div class="kpi-accent amber"></div>
+          <div class="kpi-icon amber-bg"><i class="fas fa-clock"></i></div>
+          <div class="kpi-value" style="color:var(--amber)" id="ctrl-open">--</div>
+          <div class="kpi-label">Open</div>
+          <div class="kpi-meta"><i class="fas fa-exclamation-triangle" style="font-size:0.625rem"></i> Requires attention</div>
+        </div>
+        <div class="kpi-3d">
+          <div class="kpi-accent cyan"></div>
+          <div class="kpi-icon cyan-bg"><i class="fas fa-gauge-high"></i></div>
+          <div class="kpi-value gradient-amber counter-up" id="ctrl-rate">--</div>
+          <div class="kpi-label">Resolution Rate</div>
+          <div class="kpi-meta"><i class="fas fa-trend-up" style="font-size:0.625rem"></i> Above target</div>
+        </div>
+      </div>
+
+      <!-- Main Grid -->
+      <div class="cc-grid">
+        <!-- Live Incident Feed -->
+        <div class="cc-panel panel-3d scan-surface">
+          <div class="holo-overlay"></div>
+          <div class="cc-panel-head">
+            <span class="cc-panel-title"><span class="dot green"></span> Live Incident Feed</span>
+            <button class="cc-panel-action" id="refresh-feed"><i class="fas fa-sync-alt"></i> Refresh</button>
+          </div>
+          <div class="cc-panel-body">
+            <div class="cc-feed" id="reports-feed" style="min-height:200px">
+              <div style="display:flex;align-items:center;justify-content:center;padding:40px;gap:12px">
+                <div class="spin spin-lg"></div>
+                <span class="f6">Loading incidents...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column -->
+        <div style="display:flex;flex-direction:column;gap:16px">
+        <!-- Live Incident Overview -->
+           <div class="cc-panel glow-edge scan-surface">
+             <div class="holo-overlay"></div>
+             <div class="cc-panel-head">
+               <span class="cc-panel-title"><i class="fas fa-map-marked-alt" style="color:var(--accent-secondary)"></i> Live Incident Overview</span>
+               <div class="live-indicator">
+                 <div class="bars"><span></span><span></span><span></span><span></span></div>
+                 Live
+               </div>
+             </div>
+             <div class="cc-panel-body">
+               <div class="incident-overview">
+                 <!-- Incident Summary Stats -->
+                 <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+                   <div style="flex:1;min-width:120px;padding:12px;background:rgba(0,230,118,.05);border:1px solid rgba(0,230,118,.12);border-radius:8px;text-align:center">
+                     <div style="font-size:1.5rem;font-weight:800;font-family:var(--mono);color:var(--green)" id="overview-active-incidents">0</div>
+                     <div style="font-size:.6875rem;color:var(--text-faint);text-transform:uppercase;letter-spacing:.04em">Active Incidents</div>
+                   </div>
+                   <div style="flex:1;min-width:120px;padding:12px;background:rgba(0,102,255,.05);border:1px solid rgba(0,102,255,.12);border-radius:8px;text-align:center">
+                     <div style="font-size:1.5rem;font-weight:800;font-family:var(--mono);color:var(--accent)" id="overview-unresolved-hazards">0</div>
+                     <div style="font-size:.6875rem;color:var(--text-faint);text-transform:uppercase;letter-spacing:.04em">Unresolved Hazards</div>
+                   </div>
+                   <div style="flex:1;min-width:120px;padding:12px;background:rgba(255,184,0,.05);border:1px solid rgba(255,184,0,.12);border-radius:8px;text-align:center">
+                     <div style="font-size:1.5rem;font-weight:800;font-family:var(--mono);color:var(--amber)" id="overview-high-risk-zones">0</div>
+                     <div style="font-size:.6875rem;color:var(--text-faint);text-transform:uppercase;letter-spacing:.04em">High-Risk Zones</div>
+                   </div>
+                   <div style="flex:1;min-width:120px;padding:12px;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.12);border-radius:8px;text-align:center">
+                     <div style="font-size:1.5rem;font-weight:800;font-family:var(--mono);color:var(--accent-secondary)" id="overview-recent-actions">0</div>
+                     <div style="font-size:.6875rem;color:var(--text-faint);text-transform:uppercase;letter-spacing:.04em">Gov Actions Today</div>
+                   </div>
+                 </div>
+                 
+                 <!-- Incident Timeline -->
+                 <div style="margin-bottom:16px">
+                   <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+                     <h4 style="font-size:.875rem;font-weight:600;color:var(--text)">Incident Timeline</h4>
+                     <button class="cc-panel-action" id="refresh-timeline"><i class="fas fa-sync-alt"></i> Refresh</button>
+                   </div>
+                   <div class="incident-timeline" id="incident-timeline" style="min-height:120px">
+                     <div style="display:flex;align-items:center;justify-content:center;padding:40px;color:var(--text-faint)">
+                       Loading incident timeline...
+                     </div>
+                   </div>
+                 </div>
+                 
+                 <!-- Priority Breakdown -->
+                 <div style="margin-bottom:16px">
+                   <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+                     <h4 style="font-size:.875rem;font-weight:600;color:var(--text)">Priority Breakdown</h4>
+                   </div>
+                   <div style="display:flex;gap:12px">
+                     <div style="flex:1;min-width:80px">
+                       <div style="font-size:1.25rem;font-weight:700;color:var(--red)" id="priority-critical">0</div>
+                       <div style="font-size:.6875rem;color:var(--text-faint);text-transform:uppercase">Critical</div>
+                     </div>
+                     <div style="flex:1;min-width:80px">
+                       <div style="font-size:1.25rem;font-weight:700;color:var(--amber)" id="priority-high">0</div>
+                       <div style="font-size:.6875rem;color:var(--text-faint);text-transform:uppercase">High</div>
+                     </div>
+                     <div style="flex:1;min-width:80px">
+                       <div style="font-size:1.25rem;font-weight:700;color:var(--accent)" id="priority-medium">0</div>
+                       <div style="font-size:.6875rem;color:var(--text-faint);text-transform:uppercase">Medium</div>
+                     </div>
+                     <div style="flex:1;min-width:80px">
+                       <div style="font-size:1.25rem;font-weight:700;color:var(--green)" id="priority-low">0</div>
+                       <div style="font-size:.6875rem;color:var(--text-faint);text-transform:uppercase">Low</div>
+                     </div>
+                   </div>
+                 </div>
+                 
+                 <!-- Quick Actions -->
+                 <div style="border-top:1px solid var(--bd);padding-top:16px">
+                   <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+                     <h4 style="font-size:.875rem;font-weight:600;color:var(--text)">Quick Actions</h4>
+                   </div>
+                   <div style="display:flex;gap:8px;flex-wrap:wrap">
+                     <a href="report.html" class="qa-card" style="flex:1;min-width:100px;padding:12px;background:var(--blk);border:1px solid var(--bd);border-radius:8px;text-align:center;transition:all .2s var(--ease);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+                       <i class="fas fa-plus-circle" style="font-size:1.25rem;color:var(--accent)"></i>
+                       <span style="font-size:.75rem;font-weight:500;color:var(--text)">New Report</span>
+                     </a>
+                     <a href="track.html" class="qa-card" style="flex:1;min-width:100px;padding:12px;background:var(--blk);border:1px solid var(--bd);border-radius:8px;text-align:center;transition:all .2s var(--ease);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+                       <i class="fas fa-search" style="font-size:1.25rem;color:var(--accent-secondary)"></i>
+                       <span style="font-size:.75rem;font-weight:500;color:var(--text)">Track Issues</span>
+                     </a>
+                     <a href="emergency.html" class="qa-card" style="flex:1;min-width:100px;padding:12px;background:rgba(255,45,85,.05);border:1px solid rgba(255,45,85,.12);border-radius:8px;text-align:center;transition:all .2s var(--ease);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+                       <i class="fas fa-external-link-alt" style="font-size:1.25rem;color:var(--red)"></i>
+                       <span style="font-size:.75rem;font-weight:500;color:var(--text)">Emergency Center</span>
+                     </a>
+                     <a href="map.html" class="qa-card" style="flex:1;min-width:100px;padding:12px;background:var(--blk);border:1px solid var(--bd);border-radius:8px;text-align:center;transition:all .2s var(--ease);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+                       <i class="fas fa-map" style="font-size:1.25rem;color:var(--green)"></i>
+                       <span style="font-size:.75rem;font-weight:500;color:var(--text)">View Live Map</span>
+                     </a>
+                   </div>
+                 </div>
+               </div>
+             </div>
+           </div>
+
+          <!-- Quick Actions -->
+          <div class="cc-panel panel-3d">
+            <div class="holo-overlay"></div>
+            <div class="cc-panel-head">
+              <span class="cc-panel-title"><i class="fas fa-bolt" style="color:var(--amber)"></i> Quick Actions</span>
+            </div>
+            <div class="cc-panel-body">
+              <div class="qa-3d">
+                <a href="report.html" class="qa-card"><i class="fas fa-plus-circle"></i><span>New Report</span></a>
+                <a href="track.html" class="qa-card"><i class="fas fa-search"></i><span>Track Issue</span></a>
+                <a href="map.html" class="qa-card"><i class="fas fa-map"></i><span>View Map</span></a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Emergency Response Module -->
+      <div class="cc-panel panel-3d glow-edge" style="border-color:rgba(255,45,85,.15)">
+        <div class="holo-overlay"></div>
+        <div class="emg-module" style="border:none;background:none;padding:0">
+          <div class="emg-module-head" style="padding:16px 20px">
+            <span class="emg-module-title"><span class="badge-dot" style="background:var(--red);animation:ping 2s infinite;width:6px;height:6px;border-radius:50%;display:inline-block"></span> Emergency Response System</span>
+            <a href="emergency.html" class="cc-panel-action"><i class="fas fa-external-link-alt"></i> Open Emergency Center</a>
+          </div>
+          <div class="emg-module-body" style="padding:0 20px 16px">
+            <div class="emg-module-stat">
+              <div class="emg-module-stat-value red" id="dash-active-emergencies">0</div>
+              <div class="emg-module-stat-label">Active Emergencies</div>
+            </div>
+            <div class="emg-module-stat">
+              <div class="emg-module-stat-value green" id="dash-response-rate">96%</div>
+              <div class="emg-module-stat-label">Response Rate</div>
+            </div>
+            <div class="emg-module-stat">
+              <div class="emg-module-stat-value blue" id="dash-nearby-hospitals">0</div>
+              <div class="emg-module-stat-label">Hospitals Nearby</div>
+            </div>
+          </div>
+          <div class="emg-module-list" style="padding:0 20px 16px">
+            <div class="emg-module-item" onclick="if(window.AccelZeroEmergency)window.AccelZeroEmergency.triggerEmergency('dashboard_sos')">
+              <div class="emg-module-item-icon red"><i class="fas fa-exclamation-triangle"></i></div>
+              <div class="emg-module-item-info">
+                <div class="emg-module-item-title">Trigger SOS Alert</div>
+                <div class="emg-module-item-desc">Send emergency alert with your current location</div>
+              </div>
+              <span class="emg-module-item-meta"><i class="fas fa-arrow-right"></i></span>
+            </div>
+            <div class="emg-module-item" onclick="window.location.href='emergency.html#hospitals'">
+              <div class="emg-module-item-icon amber"><i class="fas fa-ambulance"></i></div>
+              <div class="emg-module-item-info">
+                <div class="emg-module-item-title">Find Nearby Hospitals</div>
+                <div class="emg-module-item-desc">Locate emergency medical facilities</div>
+              </div>
+              <span class="emg-module-item-meta"><i class="fas fa-arrow-right"></i></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Government Transparency Grid -->
+      <div class="cc-grid">
+          <!-- Budget Transparency -->
+        <div class="gov-card panel-3d scan-surface">
+          <div class="holo-overlay"></div>
+          <div class="gov-head">
+            <div class="gov-head-left">
+              <div class="gov-head-icon"><i class="fas fa-coins"></i></div>
+              <span class="gov-head-title">Budget Transparency</span>
+            </div>
+            <button class="gov-head-action">View Details <i class="fas fa-arrow-right" style="margin-left:4px;font-size:0.5625rem"></i></button>
+          </div>
+          <div class="gov-body">
+            <!-- Donut chart visual -->
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;padding:12px;background:var(--blk);border:1px solid var(--bd);border-radius:10px">
+              <div class="donut" style="flex-shrink:0">
+                <svg class="donut-ring" viewBox="0 0 80 80">
+                  <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="6"/>
+                  <circle cx="40" cy="40" r="32" fill="none" stroke="var(--accent)" stroke-width="6" stroke-linecap="round" stroke-dasharray="201" stroke-dashoffset="52" transform="rotate(-90 40 40)"/>
+                  <circle cx="40" cy="40" r="32" fill="none" stroke="var(--amber)" stroke-width="6" stroke-linecap="round" stroke-dasharray="201" stroke-dashoffset="149" transform="rotate(-90 40 40)"/>
+                </svg>
+                <div class="donut-center">
+                  <div class="donut-value">74%</div>
+                  <div class="donut-label">Used</div>
+                </div>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+                <div style="display:flex;align-items:center;gap:8px;font-size:.6875rem">
+                  <div style="width:8px;height:8px;border-radius:2px;background:var(--accent)"></div>
+                  <span style="color:var(--text-dim)">Allocated</span>
+                  <span style="margin-left:auto;font-weight:600;font-family:var(--mono)">â‚¹42.8 Cr</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;font-size:.6875rem">
+                  <div style="width:8px;height:8px;border-radius:2px;background:var(--amber)"></div>
+                  <span style="color:var(--text-dim)">Remaining</span>
+                  <span style="margin-left:auto;font-weight:600;font-family:var(--mono)">â‚¹11.3 Cr</span>
+                </div>
+              </div>
+            </div>
+            <div class="gov-grid">
+              <div class="gov-metric">
+                <div class="gov-metric-label"><i class="fas fa-file-invoice"></i> Sanctioned Amount</div>
+                <div class="gov-metric-value"><span class="currency">â‚¹</span>48.2 Cr</div>
+              </div>
+              <div class="gov-metric">
+                <div class="gov-metric-label"><i class="fas fa-check-circle"></i> Allocated Budget</div>
+                <div class="gov-metric-value"><span class="currency">â‚¹</span>42.8 Cr</div>
+              </div>
+              <div class="gov-metric">
+                <div class="gov-metric-label"><i class="fas fa-arrow-up"></i> Spent Amount</div>
+                <div class="gov-metric-value"><span class="currency">â‚¹</span>31.5 Cr</div>
+                <div class="gov-metric-bar"><div class="gov-metric-bar-fill blue" style="width:74%"></div></div>
+              </div>
+              <div class="gov-metric">
+                <div class="gov-metric-label"><i class="fas fa-arrow-down"></i> Remaining Budget</div>
+                <div class="gov-metric-value" style="color:var(--amber)"><span class="currency">â‚¹</span>11.3 Cr</div>
+                <div class="gov-metric-bar"><div class="gov-metric-bar-fill amber" style="width:26%"></div></div>
+              </div>
+              <div class="gov-metric full">
+                <div class="gov-metric-label"><i class="fas fa-tasks"></i> Project Completion</div>
+                <div class="gov-metric-value" style="color:var(--green)">68% <span class="currency">completed</span></div>
+                <div class="gov-metric-bar"><div class="gov-metric-bar-fill green" style="width:68%"></div></div>
+              </div>
+            </div>
+            <div style="margin-top:16px">
+              <div class="gov-metric-row">
+                <span class="gov-metric-row-label"><i class="fas fa-wallet"></i> Contractor Payment</span>
+                <span class="gov-metric-row-value"><span class="gov-status active">&#9679; Paid</span> â‚¹18.2 Cr</span>
+              </div>
+              <div class="gov-metric-row">
+                <span class="gov-metric-row-label"><i class="fas fa-tools"></i> Road Repair Cost</span>
+                <span class="gov-metric-row-value"><span class="currency">â‚¹</span>2.4 Cr</span>
+              </div>
+              <div class="gov-metric-row">
+                <span class="gov-metric-row-label"><i class="fas fa-chart-pie"></i> Funding Utilization</span>
+                <span class="gov-metric-row-value" style="color:var(--green)">74%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Road Infrastructure -->
+        <div class="gov-card panel-3d scan-surface">
+          <div class="holo-overlay"></div>
+          <div class="gov-head">
+            <div class="gov-head-left">
+              <div class="gov-head-icon"><i class="fas fa-road"></i></div>
+              <span class="gov-head-title">Road Infrastructure</span>
+            </div>
+            <button class="gov-head-action">View Network <i class="fas fa-arrow-right" style="margin-left:4px;font-size:0.5625rem"></i></button>
+          </div>
+          <div class="gov-body">
+            <!-- Mini road network preview -->
+            <div class="map-preview" style="height:100px;margin-bottom:12px;border-radius:8px">
+              <div class="map-preview-grid"></div>
+              <div class="map-preview-dot high" style="left:30%;top:35%"></div>
+              <div class="map-preview-dot critical" style="left:65%;top:50%"></div>
+              <div class="map-preview-dot medium" style="left:45%;top:70%"></div>
+              <div class="map-preview-dot low" style="left:20%;top:60%"></div>
+              <div class="map-preview-route blue" style="left:20%;top:45%;width:25%"></div>
+              <div class="map-preview-route cyan" style="left:45%;top:55%;width:30%"></div>
+              <div class="map-preview-route blue" style="left:25%;top:40%;width:15%;transform:rotate(45deg);transform-origin:left center"></div>
+              <div style="position:absolute;bottom:6px;right:8px;font-size:.5rem;color:var(--text-faint);font-family:var(--mono);z-index:3">LIVE</div>
+            </div>
+            <div class="gov-grid">
+              <div class="gov-metric">
+                <div class="gov-metric-label"><i class="fas fa-road"></i> Road Type</div>
+                <div class="gov-metric-value" style="font-size:0.9375rem">National Highway</div>
+              </div>
+              <div class="gov-metric">
+                <div class="gov-metric-label"><i class="fas fa-star"></i> Quality Index</div>
+                <div class="gov-metric-value" style="color:var(--amber)">B+ <span class="currency">(78/100)</span></div>
+                <div class="gov-metric-bar"><div class="gov-metric-bar-fill amber" style="width:78%"></div></div>
+              </div>
+              <div class="gov-metric">
+                <div class="gov-metric-label"><i class="fas fa-calendar"></i> Last Maintenance</div>
+                <div class="gov-metric-value" style="font-size:0.9375rem">Dec 2025</div>
+              </div>
+              <div class="gov-metric">
+                <div class="gov-metric-label"><i class="fas fa-clock"></i> Estimated Lifespan</div>
+                <div class="gov-metric-value" style="font-size:0.9375rem;color:var(--accent)">4.2 years</div>
+              </div>
+            </div>
+            <div style="margin-top:16px">
+              <div class="gov-metric-row">
+                <span class="gov-metric-row-label"><i class="fas fa-user-tie"></i> Contractor</span>
+                <span class="gov-metric-row-value">NHAI Roadworks Ltd</span>
+              </div>
+              <div class="gov-metric-row">
+                <span class="gov-metric-row-label"><i class="fas fa-building"></i> Authority</span>
+                <span class="gov-metric-row-value">NHAI â€” Zone 4</span>
+              </div>
+              <div class="gov-metric-row">
+                <span class="gov-metric-row-label"><i class="fas fa-shield"></i> Road Ownership</span>
+                <span class="gov-metric-row-value">Ministry of Transport</span>
+              </div>
+              <div class="gov-metric-row">
+                <span class="gov-metric-row-label"><i class="fas fa-history"></i> Last Repaired</span>
+                <span class="gov-metric-row-value" style="font-family:var(--mono)">2024-08-15</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Feed -->
+      <div class="cc-panel panel-3d scan-surface">
+        <div class="holo-overlay"></div>
+        <div class="cc-panel-head">
+          <span class="cc-panel-title"><span class="dot amber"></span> Recent Activity</span>
+        </div>
+        <div class="cc-panel-body">
+          <div class="cc-feed" id="activity-feed">
+            <div class="activity-item" style="cursor:default;opacity:0.6">
+              <div class="activity-dot blue"></div>
+              <div class="activity-body">
+                <div class="activity-text">Loading platform activity...</div>
+                <div class="activity-time">Just now</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Panel -->
+  <div id="notif-panel" style="position:fixed;top:72px;right:24px;width:360px;max-height:480px;background:var(--blk-surface);border:1px solid var(--bd);border-radius:16px;box-shadow:var(--shade-lg);z-index:250;display:none;flex-direction:column;overflow:hidden;backdrop-filter:blur(20px)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--bd)">
+      <span class="f5" style="font-weight:600">Notifications</span>
+      <button onclick="Notifications.close()" style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--text-faint);background:none;border:none;cursor:pointer"><i class="fas fa-times" style="font-size:0.75rem"></i></button>
+    </div>
+    <div id="notif-list" style="flex:1;overflow-y:auto;padding:8px 0"></div>
+  </div>
+
+  <div id="toast-container" style="position:fixed;top:72px;right:24px;z-index:300;display:flex;flex-direction:column;gap:8px;pointer-events:none"></div>
+
+  <!-- Bottom Bar (Mobile) -->
+  <nav class="bottombar" id="mobile-nav">
+    <div class="bottombar-inner">
+      <a href="dashboard.html" class="active"><i class="fas fa-chart-bar"></i><span>Dashboard</span></a>
+      <a href="map.html"><i class="fas fa-map"></i><span>Map</span></a>
+      <a href="report.html"><i class="fas fa-plus-circle"></i><span>Report</span></a>
+      <a href="track.html"><i class="fas fa-search"></i><span>Track</span></a>
+      <a href="emergency.html"><i class="fas fa-exclamation-triangle" style="color:var(--red)"></i><span style="color:var(--red)">SOS</span></a>
+      <a href="profile.html"><i class="fas fa-user"></i><span>Profile</span></a>
+    </div>
+  </nav>
+
+       <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="../scripts/auth.js"></script>
+    <script src="../scripts/router.js"></script>
+    <script src="../scripts/http.js"></script>
+    <script src="../scripts/ui.js"></script>
+    <script src="../scripts/navigation.js"></script>
+    <script src="../scripts/realtime.js"></script>
+    <script src="../scripts/notifications.js"></script>
+    <script src="../scripts/app.js"></script>
+    <script src="../scripts/emergency.js"></script>
+    <script src="../scripts/chatbot.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const { user } = getSession();
+      if (typeof initNotifications === 'function' && user) {
+        initNotifications();
+        document.getElementById('notif-toggle').style.display = 'flex';
+      }
+      if (typeof initRealtime === 'function' && user) {
+        initRealtime();
+      }
+      const topLogout = document.getElementById('logout-btn-top');
+      if (topLogout) {
+        topLogout.addEventListener('click', async () => {
+          await logoutUser();
+          window.location.href = '/';
+        });
+      }
+
+     // Load emergency stats
+     fetch('/api/v1/emergency/stats').then(r => r.json()).then(stats => {
+       const activeEl = document.getElementById('dash-active-emergencies');
+       if (activeEl) activeEl.textContent = stats.active || 0;
+       const rateEl = document.getElementById('dash-response-rate');
+       if (rateEl) rateEl.textContent = (stats.response_rate || 96) + '%';
+     }).catch(() => {});
+
+     // Load hospital count
+     if (navigator.geolocation) {
+       navigator.geolocation.getCurrentPosition(pos => {
+         const emg = window.AccelZeroEmergency;
+         if (emg) {
+           emg.state.location = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+           emg.findNearbyHospitals();
+           setTimeout(() => {
+             const hEl = document.getElementById('dash-nearby-hospitals');
+             if (hEl) hEl.textContent = emg.state.nearbyHospitals.length;
+           }, 3000);
+         }
+       }, () => {}, { enableHighAccuracy: true, timeout: 5000 });
+     }
+
+     // Load Live Incident Overview data
+     async function loadIncidentOverview() {
+       try {
+         // Fetch emergency incidents (critical reports)
+         const emergencyResponse = await fetch('/api/v1/emergency/incidents');
+         const emergencies = await emergencyResponse.json();
+         
+         // Fetch dashboard stats for general report counts
+         const statsResponse = await fetch('/api/v1/reports/stats');
+         const stats = await statsResponse.json();
+         
+         // Update incident overview stats
+         document.getElementById('overview-active-incidents').textContent = emergencies.length || 0;
+         document.getElementById('overview-unresolved-hazards').textContent = (stats.open || 0);
+         document.getElementById('overview-high-risk-zones').textContent = Math.min(emergencies.length, 5) || 0;
+         document.getElementById('overview-recent-actions').textContent = (stats.resolved_today || 0);
+         
+         // Update priority breakdown (simplified based on severity)
+         const criticalCount = emergencies.filter(e => e.severity === 'critical').length;
+         const highCount = emergencies.filter(e => e.severity === 'high').length;
+         const mediumCount = emergencies.filter(e => e.severity === 'medium').length;
+         const lowCount = emergencies.filter(e => e.severity === 'low').length;
+         
+         document.getElementById('priority-critical').textContent = criticalCount;
+         document.getElementById('priority-high').textContent = highCount;
+         document.getElementById('priority-medium').textContent = mediumCount;
+         document.getElementById('priority-low').textContent = lowCount;
+         
+         // Update incident timeline
+         const timelineEl = document.getElementById('incident-timeline');
+         if (emergencies.length > 0) {
+           timelineEl.innerHTML = emergencies.slice(0, 5).map(emergency => {
+             const time = new Date(emergency.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+             return `
+               <div style="display:flex;align-items:flex-start;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+                 <div style="flex-shrink:0;width:8px;height:8px;border-radius:50%;background:${emergency.severity === 'critical' ? 'var(--red)' : emergency.severity === 'high' ? 'var(--amber)' : emergency.severity === 'medium' ? 'var(--accent)' : 'var(--green)'}"></div>
+                 <div style="flex:1;min-width:0">
+                   <div style="font-size:.875rem;font-weight:500;color:var(--text)">[${emergency.incident_type.toUpperCase()}] ${emergency.description || 'Incident reported'}</div>
+                   <div style="font-size:.6875rem;color:var(--text-faint);font-family:var(--mono)">${time}</div>
+                 </div>
+               </div>
+             `;
+           }).join('');
+         } else {
+           timelineEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;padding:40px;color:var(--text-faint)">No active incidents</div>';
+         }
+       } catch (error) {
+         document.getElementById('overview-active-incidents').textContent = '--';
+         document.getElementById('overview-unresolved-hazards').textContent = '--';
+         document.getElementById('overview-high-risk-zones').textContent = '--';
+         document.getElementById('overview-recent-actions').textContent = '--';
+         document.getElementById('priority-critical').textContent = '--';
+         document.getElementById('priority-high').textContent = '--';
+         document.getElementById('priority-medium').textContent = '--';
+         document.getElementById('priority-low').textContent = '--';
+         document.getElementById('incident-timeline').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;padding:40px;color:var(--text-faint)">Failed to load incident data</div>';
+       }
+     }
+
+     // Load incident overview on page load
+     loadIncidentOverview();
+     
+     // Refresh timeline button
+     document.getElementById('refresh-timeline').addEventListener('click', loadIncidentOverview);
+   });
+   </script>
+</body>
+</html>

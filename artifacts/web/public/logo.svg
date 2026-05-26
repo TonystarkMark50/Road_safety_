@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none">
-  <circle cx="120" cy="120" r="110" fill="#0f1728" stroke="#4ba8f7" stroke-width="4"/>
-  <path d="M120 45 L155 100 H85 Z" fill="#4ba8f7" opacity="0.9"/>
-  <path d="M85 100 H155 L170 145 H70 Z" fill="#4ba8f7" opacity="0.7"/>
-  <path d="M70 145 H170 L178 170 H62 Z" fill="#4ba8f7" opacity="0.5"/>
-  <line x1="120" y1="100" x2="120" y2="170" stroke="#0f1728" stroke-width="4"/>
-  <text x="120" y="205" font-family="Inter, system-ui, sans-serif" font-size="20" font-weight="700" fill="#f0f4f8" text-anchor="middle" letter-spacing="0.5">RoadSoS AI</text>
-</svg>

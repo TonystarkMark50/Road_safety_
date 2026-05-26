@@ -1,49 +1,44 @@
-# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+venv/
+.venv/
 
-# compiled output
-dist
-tmp
-out-tsc
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Runtime data
+uploads/
+logs/
+*.log
+
+# Build artifacts
+build/
+dist/
+tmp/
 *.tsbuildinfo
-.expo
-.expo-shared
 
-# dependencies
-node_modules
+# Dependencies
+node_modules/
 
-# IDEs and editors
-/.idea
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
-
-# IDE - VSCode
+# Editors and OS files
+.idea/
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-
-# misc
-/.sass-cache
-/connect.lock
-/coverage
-/libpeerconnection.log
-npm-debug.log
-yarn-error.log
-testem.log
-/typings
-
-# System Files
 .DS_Store
 Thumbs.db
 
-.cursor/rules/nx-rules.mdc
-.github/instructions/nx.instructions.md
-
-# Replit
+# Platform caches
 .cache/
 .local/

@@ -1,0 +1,12 @@
+{
+  "name": "acceleratezero-frontend",
+  "version": "1.0.0",
+  "description": "AccelerateZero frontend static site",
+  "scripts": {
+    "dev": "npx http-server -c-1 -p 3000",
+    "start": "npx http-server -c-1 -p 3000"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

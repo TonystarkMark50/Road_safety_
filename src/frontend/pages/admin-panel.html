@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel — AccelerateZero</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="../styles/main.css" />
+  <style>
+    .admin-layout{display:flex;min-height:100vh}
+    .admin-sidebar{width:240px;background:var(--blk-elevated);border-right:1px solid var(--bd);padding:20px 16px;display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto}
+    .admin-sidebar-brand{display:flex;align-items:center;gap:10px;padding:0 4px 20px;border-bottom:1px solid var(--bd);margin-bottom:16px}
+    .admin-sidebar-brand img{width:28px;height:28px;border-radius:8px}
+    .admin-sidebar-brand span{font-size:0.875rem;font-weight:700;letter-spacing:-0.02em}
+    .admin-sidebar-nav{display:flex;flex-direction:column;gap:2px;flex:1}
+    .admin-sidebar-link{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;font-size:0.8125rem;color:var(--text-dim);transition:all 0.15s var(--ease);text-decoration:none}
+    .admin-sidebar-link:hover{background:var(--blk-hover);color:var(--text)}
+    .admin-sidebar-link.active{background:rgba(79,70,229,0.1);color:#818cf8}
+    .admin-sidebar-link i{width:18px;text-align:center;font-size:0.8125rem}
+    .admin-main{flex:1;padding:32px;max-width:calc(100vw - 240px);overflow-x:hidden}
+    .admin-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px}
+    .admin-header-left h1{font-size:1.25rem;font-weight:700;letter-spacing:-0.02em;margin:0}
+    .admin-header-left p{font-size:0.8125rem;color:var(--text-dim);margin:2px 0 0}
+    .admin-header-right{display:flex;align-items:center;gap:12px}
+    .admin-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:100px;background:rgba(79,70,229,0.1);color:#818cf8;font-size:0.6875rem;font-weight:600}
+    .admin-badge i{font-size:0.5rem;color:#34d399}
+    .admin-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px}
+    .admin-stat-card{padding:20px;border-radius:16px;background:var(--blk-surface);border:1px solid var(--bd)}
+    .admin-stat-card .stat-label{font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-faint);margin-bottom:4px}
+    .admin-stat-card .stat-value{font-size:1.5rem;font-weight:700;letter-spacing:-0.02em}
+    .admin-section{margin-bottom:32px}
+    .admin-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .admin-section-header h2{font-size:1rem;font-weight:600;margin:0}
+    .admin-section-header .section-count{font-size:0.75rem;color:var(--text-faint);padding:2px 8px;border-radius:6px;background:var(--blk-elevated)}
+    .admin-table-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--bd);background:var(--blk-surface)}
+    .admin-table{width:100%;border-collapse:collapse;font-size:0.8125rem}
+    .admin-table th{padding:12px 16px;text-align:left;font-size:0.6875rem;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--bd);background:var(--blk-elevated)}
+    .admin-table td{padding:12px 16px;border-bottom:1px solid var(--bd);color:var(--text-dim)}
+    .admin-table tr:last-child td{border-bottom:none}
+    .admin-table tr:hover td{background:var(--blk-hover)}
+    .admin-actions{display:flex;gap:8px;align-items:center}
+    .admin-select{padding:4px 8px;border-radius:6px;border:1px solid var(--bd);background:var(--blk-elevated);color:var(--text);font-size:0.75rem;font-family:inherit;cursor:pointer;outline:none;transition:border-color 0.2s}
+    .admin-select:focus{border-color:#818cf8}
+    .admin-select:disabled{opacity:0.4;cursor:not-allowed}
+    .badge{display:inline-block;padding:2px 8px;border-radius:100px;font-size:0.625rem;font-weight:600;text-transform:capitalize}
+    .badge-admin{background:rgba(79,70,229,0.12);color:#818cf8}
+    .badge-authority{background:rgba(245,158,11,0.12);color:#f59e0b}
+    .badge-emergency{background:rgba(239,68,68,0.12);color:#ef4444}
+    .badge-citizen{background:rgba(16,185,129,0.12);color:#34d399}
+    .badge-active{background:rgba(16,185,129,0.12);color:#34d399}
+    .badge-suspended{background:rgba(239,68,68,0.12);color:#ef4444}
+    .admin-req-card{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:12px;border:1px solid var(--bd);background:var(--blk-surface);margin-bottom:8px;gap:16px}
+    .admin-req-card:hover{border-color:var(--bd-hover)}
+    .admin-req-info{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+    .admin-req-info strong{font-size:0.8125rem}
+    .admin-req-info span{font-size:0.75rem;color:var(--text-dim)}
+    .admin-req-actions{display:flex;gap:8px;flex-shrink:0}
+    .admin-req-actions .btn{padding:6px 14px;font-size:0.6875rem;border-radius:8px;border:none;cursor:pointer;font-weight:600;font-family:inherit;transition:all 0.2s}
+    .btn-success{background:rgba(16,185,129,0.15);color:#34d399}
+    .btn-success:hover{background:rgba(16,185,129,0.25)}
+    .btn-danger{background:rgba(239,68,68,0.15);color:#ef4444}
+    .btn-danger:hover{background:rgba(239,68,68,0.25)}
+    .btn-warning{background:rgba(245,158,11,0.15);color:#f59e0b}
+    .btn-warning:hover{background:rgba(245,158,11,0.25)}
+    .audit-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--bd);font-size:0.75rem}
+    .audit-item:last-child{border-bottom:none}
+    .audit-action{font-weight:600;color:var(--text);min-width:140px}
+    .audit-detail{color:var(--text-dim);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .audit-time{color:var(--text-faint);white-space:nowrap}
+    .mono{font-family:'JetBrains Mono',monospace;font-size:0.6875rem}
+    .f7{font-size:0.6875rem}
+    .admin-logout{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;font-size:0.8125rem;color:var(--red);cursor:pointer;transition:all 0.15s;border:none;background:none;width:100%;text-align:left;font-family:inherit;margin-top:auto}
+    .admin-logout:hover{background:rgba(239,68,68,0.08)}
+    .no-data{text-align:center;padding:24px;color:var(--text-faint);font-size:0.8125rem}
+    .tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--bd);padding-bottom:0}
+    .tab{display:flex;align-items:center;gap:6px;padding:10px 16px;border-radius:10px 10px 0 0;font-size:0.8125rem;color:var(--text-dim);cursor:pointer;transition:all 0.2s;border:none;background:none;font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-1px}
+    .tab:hover{color:var(--text);background:var(--blk-hover)}
+    .tab.active{color:#818cf8;border-bottom-color:#818cf8;background:rgba(79,70,229,0.05)}
+    .tab-content{display:none}
+    .tab-content.active{display:block}
+    .admin-empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;text-align:center}
+    .admin-empty-state i{font-size:2rem;color:var(--text-faint);margin-bottom:12px;opacity:0.5}
+    .admin-empty-state h3{font-size:1rem;font-weight:600;margin:0 0 4px}
+    .admin-empty-state p{font-size:0.8125rem;color:var(--text-dim);margin:0}
+    @media(max-width:768px){.admin-sidebar{display:none}.admin-main{padding:20px;max-width:100%}.admin-header{flex-direction:column;align-items:flex-start;gap:12px}.admin-stats{grid-template-columns:1fr 1fr}}
+    .admin-back-link{display:inline-flex;align-items:center;gap:6px;font-size:0.75rem;color:var(--text-faint);text-decoration:none;margin-bottom:16px;transition:color 0.2s}
+    .admin-back-link:hover{color:var(--text-dim)}
+  </style>
+</head>
+<body>
+  <div id="particles-canvas"></div>
+
+  <div class="admin-layout">
+    <!-- Sidebar -->
+    <aside class="admin-sidebar">
+      <div class="admin-sidebar-brand">
+        <img src="../images/logo.png" alt="" />
+        <span>AccelerateZero</span>
+      </div>
+      <nav class="admin-sidebar-nav">
+        <a class="admin-sidebar-link active" href="#overview" data-tab="overview"><i class="fas fa-gauge-high"></i> Overview</a>
+        <a class="admin-sidebar-link" href="#users" data-tab="users"><i class="fas fa-users"></i> Users</a>
+        <a class="admin-sidebar-link" href="#role-requests" data-tab="role-requests"><i class="fas fa-arrow-up"></i> Role Requests</a>
+        <a class="admin-sidebar-link" href="#gov-requests" data-tab="gov-requests"><i class="fas fa-building-columns"></i> Gov Requests</a>
+        <a class="admin-sidebar-link" href="#audit" data-tab="audit"><i class="fas fa-list"></i> Audit Log</a>
+        <a class="admin-sidebar-link" href="#login-attempts" data-tab="login-attempts"><i class="fas fa-right-to-bracket"></i> Login Attempts</a>
+      </nav>
+      <button class="admin-logout" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </aside>
+
+    <!-- Main -->
+    <main class="admin-main">
+      <div class="admin-header">
+        <div class="admin-header-left">
+          <a href="/" class="admin-back-link"><i class="fas fa-arrow-left"></i> Back to Platform</a>
+          <h1>Admin Panel</h1>
+          <p>Welcome, <span id="admin-name">Admin</span></p>
+        </div>
+        <div class="admin-header-right">
+          <span class="admin-badge"><i class="fas fa-circle"></i> Super Admin</span>
+        </div>
+      </div>
+
+      <!-- Overview Tab -->
+      <div class="tab-content active" id="tab-overview">
+        <div class="admin-stats">
+          <div class="admin-stat-card">
+            <div class="stat-label">Total Users</div>
+            <div class="stat-value gradient" id="stat-total-users">--</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="stat-label">Total Reports</div>
+            <div class="stat-value gradient-cyan" id="stat-total-reports">--</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="stat-label">Resolved</div>
+            <div class="stat-value" style="color:var(--green)" id="stat-resolved">--</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="stat-label">Your Role</div>
+            <div class="stat-value" style="color:#818cf8;font-size:1rem;padding-top:4px">Administrator</div>
+          </div>
+        </div>
+
+        <div class="admin-empty-state">
+          <i class="fas fa-shield-halved"></i>
+          <h3>Enterprise Admin Console</h3>
+          <p>Use the sidebar to manage users, roles, and government access requests.</p>
+        </div>
+      </div>
+
+      <!-- Users Tab -->
+      <div class="tab-content" id="tab-users">
+        <div class="admin-section-header">
+          <h2>User Management</h2>
+          <span class="section-count">All registered users</span>
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Joined</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="users-table-body">
+              <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-faint)">Loading users...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Role Requests Tab -->
+      <div class="tab-content" id="tab-role-requests">
+        <div class="admin-section-header">
+          <h2>Role Upgrade Requests</h2>
+          <span class="section-count">Pending approvals</span>
+        </div>
+        <div id="role-requests-list">
+          <div class="no-data">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Gov Requests Tab -->
+      <div class="tab-content" id="tab-gov-requests">
+        <div class="admin-section-header">
+          <h2>Government Access Requests</h2>
+          <span class="section-count">Pending verification</span>
+        </div>
+        <div id="gov-requests-list">
+          <div class="no-data">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Audit Log Tab -->
+      <div class="tab-content" id="tab-audit">
+        <div class="admin-section-header">
+          <h2>Audit Log</h2>
+          <span class="section-count">System activity</span>
+        </div>
+        <div class="admin-table-wrap">
+          <div style="padding:16px" id="audit-log-list">
+            <div class="no-data">Loading...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Login Attempts Tab -->
+      <div class="tab-content" id="tab-login-attempts">
+        <div class="admin-section-header">
+          <h2>Login Attempts</h2>
+          <span class="section-count">Recent authentication activity</span>
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>IP Address</th>
+                <th>User Agent</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody id="login-attempts-body">
+              <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-faint)">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-container" style="position:fixed;top:72px;right:24px;z-index:10000;display:flex;flex-direction:column;gap:8px;pointer-events:none"></div>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="../scripts/auth.js"></script>
+  <script src="../scripts/router.js"></script>
+  <script src="../scripts/http.js"></script>
+  <script src="../scripts/ui.js"></script>
+  <script src="../scripts/navigation.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Tab switching via sidebar
+      document.querySelectorAll('.admin-sidebar-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const tabId = link.dataset.tab;
+          document.querySelectorAll('.admin-sidebar-link').forEach(l => l.classList.remove('active'));
+          link.classList.add('active');
+          document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+          const target = document.getElementById('tab-' + tabId);
+          if (target) target.classList.add('active');
+        });
+      });
+    });
+
+    async function handleLogout() {
+      await logoutUser();
+      window.location.href = '/';
+    }
+  </script>
+  <nav class="admin-mobile-bar" aria-label="Admin navigation">
+    <a href="admin-panel.html" class="active" data-tab-link="users"><i class="fas fa-users"></i>Users</a>
+    <a href="#" data-tab-link="roles"><i class="fas fa-user-shield"></i>Roles</a>
+    <a href="#" data-tab-link="gov"><i class="fas fa-landmark"></i>Gov</a>
+    <a href="#" data-tab-link="audit"><i class="fas fa-clipboard-list"></i>Audit</a>
+  </nav>
+  <script src="../scripts/app.js"></script>
+  <script>
+    document.querySelectorAll('.admin-mobile-bar a[data-tab-link]').forEach((a) => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const tab = a.getAttribute('data-tab-link');
+        document.querySelector(`.admin-sidebar-link[data-tab="${tab}"]`)?.click();
+        document.querySelectorAll('.admin-mobile-bar a').forEach((x) => x.classList.remove('active'));
+        a.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

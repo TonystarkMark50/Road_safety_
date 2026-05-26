@@ -1,0 +1,494 @@
+Act as a principal software architect, elite senior full stack engineer, enterprise authentication architect, scalable systems engineer, senior UI/UX designer, DevOps optimizer, and startup-grade product engineer.
+
+The AccelerateZero platform is now entering a COMPLETE ENTERPRISE REBUILD phase.
+
+Your task is to:
+
+* audit the ENTIRE project
+* rebuild the architecture professionally
+* redesign the complete UI/UX
+* implement enterprise-grade authentication
+* create a proper operational dashboard
+* optimize backend/frontend systems
+* simplify project structure
+* implement scalable database architecture
+* make the platform look and behave like a real funded startup product
+
+The final platform must feel:
+
+* premium
+* futuristic
+* scalable
+* highly secure
+* investor-ready
+* IIT hackathon-winning
+* production-grade
+
+════════════════════════════════════
+SECTION 1 — COMPLETE PROJECT AUDIT
+════════════════════════════════════
+
+Audit EVERYTHING:
+
+* frontend
+* backend
+* database
+* auth system
+* routes
+* APIs
+* dashboard
+* chatbot
+* maps
+* emergency systems
+* UI components
+* services
+* middleware
+* assets
+* configurations
+
+Inspect EVERY:
+
+* file
+* folder
+* component
+* route
+* utility
+* dependency
+* database query
+
+Identify:
+
+* duplicated code
+* dead components
+* unnecessary folders
+* unstable architecture
+* broken routing
+* performance bottlenecks
+* bad UI patterns
+* inconsistent naming
+* auth issues
+* security weaknesses
+
+════════════════════════════════════
+SECTION 2 — ENTERPRISE AUTHENTICATION SYSTEM
+════════════════════════════════════
+
+Build a COMPLETE enterprise-grade authentication system exactly how top companies build modern SaaS authentication.
+
+PRIMARY OBJECTIVE:
+Authentication must feel:
+
+* seamless
+* secure
+* invisible
+* stable
+* production-grade
+
+════════════════════════════════════
+AUTHENTICATION REQUIREMENTS
+════════════════════════════════════
+
+Implement:
+
+* Google OAuth
+* Email/password login
+* secure session persistence
+* refresh token handling
+* JWT validation
+* role-based access control
+* protected routes
+* secure logout
+* auth hydration
+* session restore
+
+Ensure:
+
+* no redirect loops
+* no auth flickering
+* no stale sessions
+* no auth race conditions
+
+════════════════════════════════════
+ROLE-BASED ACCESS CONTROL (RBAC)
+════════════════════════════════════
+
+Roles:
+
+* citizen
+* government
+* admin
+* super_admin
+
+Permissions:
+Citizen:
+
+* create reports
+* track incidents
+* use chatbot
+* access dashboard
+
+Government:
+
+* manage reports
+* update infrastructure
+* handle emergencies
+* publish updates
+
+Admin:
+
+* manage users
+* manage permissions
+* access analytics
+* moderate platform
+
+Super Admin:
+
+* full system control
+
+Ensure:
+
+* backend validates ALL permissions
+* frontend never trusted alone
+* unauthorized access impossible
+
+════════════════════════════════════
+AUTH FLOW REQUIREMENTS
+════════════════════════════════════
+
+Correct flow:
+
+1. User opens website
+2. Login/signup page appears
+3. User authenticates
+4. Session initializes
+5. Profile auto-creates
+6. Role assigned correctly
+7. Dashboard loads instantly
+
+Ensure:
+
+* authenticated users NEVER see login again
+* protected routes remain secure
+* sessions persist after refresh
+
+════════════════════════════════════
+SECTION 3 — COMPLETE DASHBOARD REBUILD
+════════════════════════════════════
+
+The dashboard must become:
+the CORE operational command center.
+
+Current dashboard likely feels:
+
+* generic
+* flat
+* disconnected
+* template-like
+
+Completely redesign it into:
+a futuristic intelligent operational workspace.
+
+════════════════════════════════════
+DASHBOARD REQUIREMENTS
+════════════════════════════════════
+
+Create:
+
+* premium operational layout
+* modular intelligence panels
+* AI-powered widgets
+* real-time analytics
+* animated live stats
+* interactive maps
+* operational notifications
+* emergency center access
+* chatbot integration
+* infrastructure monitoring
+
+The dashboard should feel like:
+
+* Tesla operations UI
+* smart-city command center
+* futuristic AI control system
+
+════════════════════════════════════
+DASHBOARD SECTIONS
+════════════════════════════════════
+
+Citizen Dashboard:
+
+* live road alerts
+* nearby incidents
+* report tracking
+* AI assistant
+* emergency access
+* notifications
+
+Government Dashboard:
+
+* infrastructure analytics
+* incident management
+* budget tracking
+* emergency monitoring
+* operational reports
+
+Admin Dashboard:
+
+* system analytics
+* user management
+* moderation tools
+* platform monitoring
+* AI usage analytics
+
+════════════════════════════════════
+SECTION 4 — COMPLETE UI/UX REBUILD
+════════════════════════════════════
+
+The UI must become:
+
+* premium
+* cinematic
+* futuristic
+* subtle 3D
+* investor-ready
+
+DO NOT:
+
+* use generic SaaS templates
+* use flat admin dashboards
+* keep repetitive cards
+* keep boring layouts
+
+════════════════════════════════════
+NEW UI REQUIREMENTS
+════════════════════════════════════
+
+Implement:
+
+* subtle 3D depth
+* cinematic lighting
+* layered panels
+* smooth motion systems
+* premium dark theme
+* intelligent glow effects
+* floating navigation
+* immersive transitions
+
+The UI should combine:
+
+* Apple-level polish
+* Tesla-style operational feel
+* Linear-style clarity
+* futuristic startup aesthetics
+
+════════════════════════════════════
+SECTION 5 — PROJECT STRUCTURE CLEANUP
+════════════════════════════════════
+
+Simplify the ENTIRE codebase.
+
+Remove:
+
+* dead files
+* unused components
+* abandoned folders
+* duplicate utilities
+* unnecessary configs
+* unstable experiments
+
+Rebuild structure like:
+
+* scalable startup architecture
+* enterprise monorepo discipline
+* senior developer standards
+
+Ensure:
+
+* minimal but scalable structure
+* readable architecture
+* maintainable modules
+
+════════════════════════════════════
+SECTION 6 — DATABASE ARCHITECTURE
+════════════════════════════════════
+
+PRIMARY DATABASE:
+Use Supabase/PostgreSQL properly.
+
+Store:
+
+* users
+* profiles
+* reports
+* analytics
+* notifications
+* emergencies
+* maps
+* chatbot history
+* infrastructure data
+
+Implement:
+
+* normalized schema
+* optimized indexing
+* scalable relations
+* RLS security
+* transactional safety
+
+════════════════════════════════════
+SECONDARY DATABASE (GOOGLE SHEETS)
+════════════════════════════════════
+
+Use Google Sheets ONLY for:
+
+* lightweight exports
+* operational summaries
+* public demo analytics
+* reporting snapshots
+
+Ensure:
+
+* Sheets NEVER becomes source of truth
+* primary DB remains authoritative
+
+════════════════════════════════════
+SECTION 7 — SECURITY HARDENING
+════════════════════════════════════
+
+Implement:
+
+* JWT validation
+* RBAC middleware
+* API protection
+* secure headers
+* input sanitization
+* XSS prevention
+* CSRF protection
+* rate limiting
+* upload validation
+
+Secure:
+
+* chatbot
+* APIs
+* uploads
+* maps
+* auth flows
+* admin panels
+
+════════════════════════════════════
+SECTION 8 — PERFORMANCE OPTIMIZATION
+════════════════════════════════════
+
+Optimize:
+
+* frontend rendering
+* backend APIs
+* dashboard loading
+* chatbot streaming
+* database queries
+* map performance
+
+Implement:
+
+* lazy loading
+* route-based splitting
+* async parallelism
+* optimized caching
+* smooth animations
+
+════════════════════════════════════
+SECTION 9 — MOBILE EXPERIENCE
+════════════════════════════════════
+
+The mobile experience must feel:
+like a premium startup app.
+
+Implement:
+
+* immersive mobile navigation
+* touch-first UX
+* responsive dashboard
+* optimized motion systems
+* mobile-friendly chatbot
+
+Ensure:
+
+* smooth performance
+* app-quality interactions
+
+════════════════════════════════════
+SECTION 10 — FINAL ENTERPRISE VALIDATION
+════════════════════════════════════
+
+After rebuilding:
+perform FULL validation.
+
+Test:
+
+* login/signup
+* dashboard
+* profile editing
+* chatbot
+* maps
+* emergency systems
+* admin workflows
+* RBAC security
+* mobile responsiveness
+* database sync
+* performance
+* API security
+
+Verify:
+
+* no route loops
+* no unstable auth
+* no dead code
+* no broken layouts
+* no duplicated logic
+* no security leaks
+
+════════════════════════════════════
+FINAL OUTPUT REQUIREMENTS
+════════════════════════════════════
+
+1. Audit the entire project professionally
+2. Rebuild enterprise authentication
+3. Implement proper RBAC
+4. Create premium operational dashboards
+5. Completely redesign UI/UX
+6. Simplify and optimize architecture
+7. Implement scalable database design
+8. Harden security systems
+9. Improve frontend/backend performance
+10. Optimize mobile experience
+11. Remove technical debt completely
+12. Ensure startup-grade engineering quality
+
+════════════════════════════════════
+FINAL EXPECTATION
+════════════════════════════════════
+
+The final AccelerateZero platform should feel exactly like a professionally engineered futuristic startup ecosystem where:
+
+* authentication feels seamless
+* dashboards feel operational
+* UI feels cinematic and premium
+* subtle 3D depth enhances UX
+* mobile experience feels app-quality
+* database architecture scales correctly
+* security feels enterprise-grade
+* performance remains fast
+* navigation feels intelligent
+* the entire product feels investor-ready and IIT hackathon-worthy
+
+The entire system must feel:
+
+* elite
+* scalable
+* futuristic
+* secure
+* highly polished
+* startup-grade
+* production-ready
+* engineered by senior architects.

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In — AccelerateZero</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="stylesheet" href="../styles/main.css" />
+  <style>
+    .auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:80px 20px;position:relative;overflow:hidden}
+    .auth-page .auth-bg{position:absolute;inset:0;background:radial-gradient(ellipse 40% 30% at 50% 40%,rgba(79,70,229,0.06) 0%,transparent 70%);pointer-events:none}
+    .auth-page .auth-box{position:relative;width:100%;max-width:420px;z-index:1}
+    .auth-page .auth-head{text-align:center;margin-bottom:32px}
+    .auth-page .auth-head .marker{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#4f46e5,#06b6d4);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:#fff;font-size:1.25rem;position:relative;animation:scale-in 0.5s var(--ease-out)}
+    .auth-page .auth-head .marker::after{content:'';position:absolute;inset:-3px;border-radius:18px;background:linear-gradient(135deg,#4f46e5,#06b6d4);opacity:0.3;filter:blur(10px);z-index:-1;animation:pulse-glow 2s ease-in-out infinite}
+    .auth-page .auth-head h1{font-size:1.5rem;font-weight:700;letter-spacing:-0.02em;animation:up 0.5s var(--ease-out) 0.1s both}
+    .auth-page .auth-head p{color:var(--text-dim);font-size:0.875rem;margin-top:4px;animation:up 0.5s var(--ease-out) 0.15s both}
+    .auth-page .auth-card{padding:32px;background:rgba(12,12,24,0.85);backdrop-filter:blur(20px);border:1px solid var(--bd);border-radius:24px;box-shadow:0 24px 80px rgba(0,0,0,0.5),0 0 40px var(--accent-glow);animation:scale-in 0.5s var(--ease-out) 0.2s both;position:relative;overflow:hidden}
+    .auth-page .auth-card::before{content:'';position:absolute;top:0;left:-100%;width:200%;height:2px;background:linear-gradient(90deg,transparent,#4f46e5,#06b6d4,transparent);animation:shimmer-sweep 4s ease-in-out infinite}
+    .auth-page .auth-card .field{animation:up 0.4s var(--ease-out) both}
+    .auth-page .auth-card .field:nth-child(1){animation-delay:0.25s}
+    .auth-page .auth-card .field:nth-child(2){animation-delay:0.3s}
+    .auth-page .auth-card .field:nth-child(3){animation-delay:0.35s}
+    .auth-page .auth-card .field:nth-child(4){animation-delay:0.4s}
+    .auth-page .auth-card .btn-google{animation:up 0.4s var(--ease-out) 0.22s both}
+    .auth-page .auth-card .auth-divider{animation:up 0.4s var(--ease-out) 0.24s both}
+    .auth-page .auth-card button[type="submit"]{animation:up 0.4s var(--ease-out) 0.5s both}
+    .auth-page .auth-footer{animation:up 0.4s var(--ease-out) 0.55s both}
+    .auth-page .auth-legal{animation:up 0.4s var(--ease-out) 0.6s both}
+    .auth-page .field-input{transition:all 0.25s var(--ease)}
+    .auth-page .field-input:focus{transform:translateY(-1px);border-color:var(--bd-accent);box-shadow:0 0 0 3px var(--accent-glow),0 4px 12px rgba(79,70,229,0.1)}
+    .auth-page .btn-primary{position:relative;overflow:hidden}
+    .auth-page .btn-primary::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent);transform:translateX(-100%);transition:transform 0.6s var(--ease)}
+    .auth-page .btn-primary:hover::after{transform:translateX(100%)}
+  </style>
+</head>
+<body>
+  <canvas id="three-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0"></canvas>
+  <div id="particles-canvas"></div>
+
+  <div class="auth-page">
+    <div class="auth-bg"></div>
+    <div class="auth-box">
+      <div class="auth-head">
+        <img src="../images/logo.png" alt="AccelerateZero" class="az-mark-img" style="margin:0 auto 16px" />
+        <h1>Welcome back</h1>
+        <p>Sign in to your account</p>
+      </div>
+      <div class="auth-card">
+        <button type="button" id="google-login-btn" class="btn-google">
+          <svg style="width:18px;height:18px" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Continue with Google
+        </button>
+        <div class="auth-divider"><span>or sign in with email</span></div>
+        <form id="login-form" style="display:flex;flex-direction:column;gap:16px">
+          <div class="field">
+            <label class="field-label" for="email">Email</label>
+            <div class="field-icon">
+              <i class="fas fa-envelope ico"></i>
+              <input type="email" id="email" class="field-input" placeholder="you@example.com" required autocomplete="email" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label" for="password">Password</label>
+            <div class="field-icon">
+              <i class="fas fa-lock ico"></i>
+              <input type="password" id="password" class="field-input" placeholder="Enter your password" required autocomplete="current-password" />
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end">
+            <a href="forgot-password.html" style="font-size:0.75rem;color:#818cf8;font-weight:500">Forgot password?</a>
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg w-full" style="justify-content:center">Sign In</button>
+        </form>
+        <div class="auth-footer">
+          Don't have an account? <a href="register.html">Create one</a>
+        </div>
+      </div>
+        <div class="auth-legal">By signing in, you agree to our Terms and Privacy Policy.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container" style="position:fixed;top:72px;right:24px;z-index:10000;display:flex;flex-direction:column;gap:8px;pointer-events:none"></div>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="../scripts/auth.js"></script>
+  <script src="../scripts/router.js"></script>
+  <script src="../scripts/http.js"></script>
+  <script src="../scripts/ui.js"></script>
+  <script src="../scripts/navigation.js"></script>
+  <script src="../scripts/app.js"></script>
+  <script src="../scripts/chatbot.js"></script>
+</body>
+</html>

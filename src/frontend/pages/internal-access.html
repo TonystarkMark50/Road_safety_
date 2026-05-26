@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Secure Access — AccelerateZero Operations</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="stylesheet" href="../styles/main.css" />
+  <style>
+    body { background:#04050a;overflow:hidden }
+    .ia-bg { position:fixed;inset:0;background:
+      radial-gradient(ellipse 40% 25% at 50% 30%,rgba(239,68,68,0.04) 0%,transparent 70%),
+      radial-gradient(ellipse 30% 20% at 30% 70%,rgba(0,102,255,0.03) 0%,transparent 60%);
+      pointer-events:none;z-index:0 }
+    .ia-grid { position:fixed;inset:0;background-image:
+      linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);
+      background-size:40px 40px;pointer-events:none;z-index:0 }
+    .ia-container { min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;position:relative;z-index:1 }
+    .ia-box { width:100%;max-width:400px }
+    .ia-header { text-align:center;margin-bottom:32px }
+    .ia-header .badge { display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:4px;background:rgba(239,68,68,.08);color:var(--red);font-size:.5625rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;border:1px solid rgba(239,68,68,.15);margin-bottom:16px }
+    .ia-header .emblem { width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#1e1e2e,#2d2d44);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:var(--red);font-size:1.25rem;border:1px solid rgba(239,68,68,.1);box-shadow:0 0 20px rgba(239,68,68,.05) }
+    .ia-header h1 { font-size:1.125rem;font-weight:600;letter-spacing:-.01em;color:#e0e0e0 }
+    .ia-header p { color:rgba(255,255,255,.3);font-size:.75rem;margin-top:4px;font-family:monospace }
+    .ia-card { padding:28px 24px;background:rgba(8,10,20,.95);border:1px solid rgba(255,255,255,.06);border-radius:12px;box-shadow:0 24px 80px rgba(0,0,0,.6);position:relative }
+    .ia-card::before { content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(239,68,68,.2),transparent) }
+    .ia-field { margin-bottom:12px }
+    .ia-field label { display:block;font-size:.625rem;font-weight:600;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px }
+    .ia-field input { width:100%;padding:10px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);color:#ccc;font-size:.8125rem;font-family:'JetBrains Mono',monospace;outline:none;transition:all .2s;box-sizing:border-box }
+    .ia-field input:focus { border-color:rgba(239,68,68,.3);box-shadow:0 0 0 2px rgba(239,68,68,.06) }
+    .ia-field input::placeholder { color:rgba(255,255,255,.15) }
+    .ia-btn { width:100%;padding:10px;border-radius:6px;border:none;font-size:.75rem;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.15);margin-top:8px }
+    .ia-btn:hover { background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.25) }
+    .ia-btn:disabled { opacity:.4;cursor:not-allowed }
+    .ia-secure { display:flex;align-items:center;justify-content:center;gap:8px;margin-top:20px;font-size:.5625rem;color:rgba(255,255,255,.15);font-family:monospace;text-transform:uppercase;letter-spacing:.1em }
+    .ia-secure .dot { width:4px;height:4px;border-radius:50%;background:rgba(239,68,68,.3) }
+    .ia-footer { text-align:center;margin-top:20px }
+    .ia-footer a { color:rgba(255,255,255,.2);font-size:.6875rem;text-decoration:none;transition:color .2s }
+    .ia-footer a:hover { color:rgba(255,255,255,.4) }
+    .ia-lock { display:none;text-align:center;padding:24px }
+    .ia-lock i { font-size:2rem;color:var(--red);margin-bottom:12px;opacity:.5 }
+    .ia-lock h3 { font-size:1rem;font-weight:600;color:#ccc;margin:0 0 4px }
+    .ia-lock p { font-size:.75rem;color:rgba(255,255,255,.3);margin:0 }
+    .spinner { width:14px;height:14px;border:2px solid rgba(239,68,68,.2);border-top-color:var(--red);border-radius:50%;animation:spin .6s linear infinite;display:inline-block }
+    @keyframes spin { to { transform:rotate(360deg) } }
+    .ia-toast { position:fixed;top:24px;right:24px;z-index:10000;display:flex;flex-direction:column;gap:8px;pointer-events:none }
+    .ia-toast-item { padding:8px 14px;border-radius:6px;background:rgba(8,10,20,.95);border:1px solid rgba(239,68,68,.2);font-size:.6875rem;color:#ccc;box-shadow:0 4px 20px rgba(0,0,0,.4);animation:iaSlideIn .25s ease-out;pointer-events:auto;max-width:300px;font-family:monospace }
+    @keyframes iaSlideIn { from { opacity:0;transform:translateY(-8px) } to { opacity:1;transform:translateY(0) } }
+    @media(max-width:480px) { .ia-card { padding:20px 16px } }
+  </style>
+</head>
+<body>
+  <canvas id="three-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0"></canvas>
+  <div id="particles-canvas"></div>
+  
+  <div class="ia-bg"></div>
+  <div class="ia-grid"></div>
+  <div class="ia-container">
+    <div class="ia-box">
+      <div class="ia-header">
+        <div class="badge"><i class="fas fa-shield-halved"></i> Internal Operations</div>
+        <div class="emblem"><i class="fas fa-terminal"></i></div>
+        <h1>Secure Access Terminal</h1>
+        <p>RESTRICTED · AUTHORIZED PERSONNEL ONLY</p>
+      </div>
+      <div class="ia-card" id="ia-card">
+        <form id="ia-form">
+          <div class="ia-field">
+            <label>User ID</label>
+            <input type="email" id="ia-email" placeholder="admin@acceleratezero.internal" required autocomplete="email" />
+          </div>
+          <div class="ia-field">
+            <label>Passkey</label>
+            <input type="password" id="ia-password" placeholder="••••••••" required autocomplete="current-password" />
+          </div>
+          <button type="submit" class="ia-btn" id="ia-login-btn">
+            <i class="fas fa-arrow-right-to-bracket"></i> Authenticate Session
+          </button>
+        </form>
+        <div class="ia-secure">
+          <span class="dot"></span>
+          <span>Encrypted Channel · v3.2.1 · All Access Logged</span>
+          <span class="dot"></span>
+        </div>
+      </div>
+      <div class="ia-footer">
+        <a href="login.html"><i class="fas fa-arrow-left"></i> Return to Main Portal</a>
+      </div>
+    </div>
+  </div>
+  <div class="ia-toast" id="ia-toast"></div>
+
+  <script>
+    function showToast(msg, type='info') {
+      const c = document.getElementById('ia-toast');
+      if (!c) return;
+      const colors = {info:'rgba(0,102,255,.2)',success:'rgba(16,185,129,.2)',error:'rgba(239,68,68,.2)'};
+      const el = document.createElement('div');
+      el.className = 'ia-toast-item';
+      el.style.borderColor = colors[type] || colors.info;
+      el.textContent = '> ' + msg;
+      c.appendChild(el);
+      setTimeout(() => { el.style.opacity='0'; el.style.transition='opacity .3s'; setTimeout(() => el.remove(),300) }, 4000);
+    }
+
+    document.getElementById('ia-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('ia-email').value.trim();
+      const password = document.getElementById('ia-password').value;
+      const btn = document.getElementById('ia-login-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Authenticating...';
+
+      try {
+        const supabase = getSupabase();
+        const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw new Error(error.message);
+
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
+        const res = await fetch('/api/v1/auth/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const profile = await res.json();
+        const user = profile.user || profile;
+        const role = user?.role || '';
+
+        if (role !== 'admin') {
+          await supabase.auth.signOut();
+          btn.innerHTML = '<i class="fas fa-xmark"></i> Access Denied';
+          showToast('ACCESS DENIED: Insufficient privileges', 'error');
+          setTimeout(() => { btn.disabled = false; btn.innerHTML = '<i class="fas fa-arrow-right-to-bracket"></i> Authenticate Session'; }, 2000);
+          return;
+        }
+
+        showToast('SESSION AUTHENTICATED. Redirecting to operations.', 'success');
+        document.getElementById('ia-card').innerHTML = `
+          <div class="ia-lock" style="display:block">
+            <i class="fas fa-shield-halved"></i>
+            <h3>Access Granted</h3>
+            <p>Redirecting to operations dashboard...</p>
+          </div>
+        `;
+        setTimeout(() => { window.location.href = '/pages/admin-panel.html'; }, 1200);
+      } catch (e) {
+        showToast('AUTH FAILED: ' + e.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-arrow-right-to-bracket"></i> Authenticate Session';
+      }
+    });
+  </script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="../scripts/auth.js">
+  <script src="../scripts/router.js"></script>
+  <script src="../scripts/http.js"></script>
+  <script src="../scripts/ui.js"></script>
+  <script src="../scripts/navigation.js"></script>
+</body>
+</html>

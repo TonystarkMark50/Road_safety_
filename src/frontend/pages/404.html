@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Page Not Found — AccelerateZero</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="../styles/main.css" />
+  <style>
+    .error-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 20px;position:relative;overflow:hidden}
+    .error-bg{position:absolute;inset:0;background:radial-gradient(ellipse 40% 30% at 50% 40%,rgba(79,70,229,0.06) 0%,transparent 70%);pointer-events:none}
+    .error-box{position:relative;text-align:center;max-width:480px;z-index:1}
+    .error-code{font-size:6rem;font-weight:900;background:linear-gradient(135deg,#4f46e5,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;margin-bottom:8px;letter-spacing:-0.04em}
+    .error-title{font-size:1.25rem;font-weight:700;margin-bottom:8px}
+    .error-desc{color:var(--text-dim);font-size:0.9375rem;line-height:1.6;margin-bottom:28px}
+    .error-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  </style>
+</head>
+<body>
+  <div id="particles-canvas"></div>
+  <div class="error-page">
+    <div class="error-bg"></div>
+    <div class="error-box">
+      <div class="error-code">404</div>
+      <h1 class="error-title">Page Not Found</h1>
+      <p class="error-desc">The page you're looking for doesn't exist or has been moved. Let's get you back on track.</p>
+      <div class="error-actions">
+        <a href="/" class="btn btn-primary"><i class="fas fa-home"></i> Go Home</a>
+        <a href="/pages/dashboard.html" class="btn btn-secondary"><i class="fas fa-chart-bar"></i> Dashboard</a>
+      </div>
+    </div>
+  </div>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="../scripts/auth.js"></script>
+  <script src="../scripts/router.js"></script>
+  <script src="../scripts/http.js"></script>
+  <script src="../scripts/ui.js"></script>
+  <script src="../scripts/navigation.js"></script>
+</body>
+</html>

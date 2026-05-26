@@ -1,0 +1,47 @@
+/* Enterprise AI assistant chrome */
+#chatbot-widget.chat-mobile-sheet .chat-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: auto;
+  width: 100%;
+  max-width: none;
+  height: min(85vh, 640px);
+  border-radius: 20px 20px 0 0;
+  transform: translateY(100%);
+}
+#chatbot-widget.chat-mobile-sheet.open .chat-panel {
+  transform: translateY(0);
+}
+.chat-presence-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  animation: chatPresence 2.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes chatPresence {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+.chat-stream-cursor::after {
+  content: '▋';
+  animation: chatBlink 0.9s step-end infinite;
+  color: var(--accent-secondary);
+  margin-left: 2px;
+}
+@keyframes chatBlink {
+  50% { opacity: 0; }
+}
+.chat-auth-gate {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.875rem;
+}
+.chat-auth-gate a {
+  color: var(--accent);
+  font-weight: 600;
+}

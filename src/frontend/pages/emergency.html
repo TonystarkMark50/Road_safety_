@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Emergency — AccelerateZero</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="/styles/main.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#05070e">
+  <style>
+    body{background:#05070e;overflow-x:hidden}
+    .emg-layout{min-height:100vh;display:flex;flex-direction:column}
+    .emg-topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;padding-top:calc(12px + env(safe-area-inset-top,0));background:rgba(5,7,14,.92);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:100}
+    .emg-topbar-left{display:flex;align-items:center;gap:10px}
+    .emg-topbar-brand{font-size:.875rem;font-weight:700;background:linear-gradient(135deg,#0066ff,#00d4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .emg-topbar-meta{font-size:.625rem;color:var(--text-faint);font-family:var(--mono);display:flex;align-items:center;gap:6px}
+    .emg-nav{display:flex;gap:4px}
+    .emg-nav a{padding:8px 14px;border-radius:8px;font-size:.75rem;font-weight:500;color:var(--text-dim);transition:all .2s var(--ease);text-decoration:none}
+    .emg-nav a:hover{background:rgba(255,255,255,.03);color:var(--text)}
+    .emg-nav a.active{background:rgba(255,45,85,.1);color:var(--red)}
+    @media(max-width:600px){.emg-nav{display:none}}
+    .emg-settings-section{display:flex;flex-direction:column;gap:16px}
+  </style>
+</head>
+<body>
+  <div id="emg-sos-page" class="active">
+    <div class="emg-layout">
+      <div class="emg-topbar">
+        <div class="emg-topbar-left">
+          <span class="emg-topbar-brand">AccelerateZero</span>
+          <span class="emg-topbar-meta"><span class="emg-connection-dot online"></span> <span id="emg-conn-status">Online</span></span>
+        </div>
+        <nav class="emg-nav">
+          <a href="#" class="active" onclick="showEmergencyPanel('sos')"><i class="fas fa-exclamation-triangle"></i> SOS</a>
+          <a href="#" onclick="showEmergencyPanel('hospitals')"><i class="fas fa-hospital"></i> Hospitals</a>
+          <a href="#" onclick="showEmergencyPanel('contacts')"><i class="fas fa-phone"></i> Contacts</a>
+          <a href="#" onclick="showEmergencyPanel('settings')"><i class="fas fa-cog"></i> Settings</a>
+          <a href="/pages/dashboard.html"><i class="fas fa-arrow-left"></i> Exit</a>
+        </nav>
+      </div>
+
+      <div id="emg-panel-sos" class="emg-container">
+        <div class="emg-sos-hero">
+          <div class="emg-sos-icon"><i class="fas fa-shield-alt"></i></div>
+          <h1 style="color:var(--text)">Emergency <span style="color:var(--red)">Response</span></h1>
+          <p>AI-powered accident detection and emergency coordination system. Trigger SOS or access emergency resources.</p>
+          <div class="emg-sos-actions" style="margin-top:16px">
+            <button class="emg-btn-primary btn-xl" onclick="triggerManualSOS()" style="font-size:1.125rem">
+              <i class="fas fa-exclamation-triangle"></i> ACTIVATE SOS
+            </button>
+            <div class="emg-chip-group" style="justify-content:center">
+              <span class="emg-chip green"><i class="fas fa-shield"></i> AI Monitoring Active</span>
+              <span class="emg-chip"><i class="fas fa-satellite-dish"></i> GPS Ready</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="emg-card">
+          <div class="emg-card-head">
+            <i class="fas fa-chart-bar"></i>
+            <span class="emg-card-title">Emergency Dashboard</span>
+          </div>
+          <div class="emg-card-body">
+            <div class="emg-dash-row">
+              <div class="emg-dash-item">
+                <div class="emg-progress-ring">
+                  <svg width="56" height="56" viewBox="0 0 56 56">
+                    <circle class="bg" cx="28" cy="28" r="24"/>
+                    <circle class="fg green" cx="28" cy="28" r="24" stroke-dasharray="150.8" stroke-dashoffset="30" id="emg-progress-response"/>
+                  </svg>
+                  <div class="center">96%</div>
+                </div>
+                <div class="emg-dash-label">Response Rate</div>
+              </div>
+              <div class="emg-dash-item">
+                <div class="emg-dash-value red" id="emg-active-count">0</div>
+                <div class="emg-dash-label">Active Emergencies</div>
+              </div>
+              <div class="emg-dash-item">
+                <div class="emg-dash-value blue" id="emg-nearby-hospitals">0</div>
+                <div class="emg-dash-label">Nearby Hospitals</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="emg-card">
+          <div class="emg-card-head">
+            <i class="fas fa-history"></i>
+            <span class="emg-card-title">Emergency Timeline</span>
+          </div>
+          <div class="emg-card-body" id="emg-timeline">
+            <div class="emg-timeline-item">
+              <div class="emg-timeline-dot green"><i class="fas fa-check" style="font-size:10px"></i></div>
+              <div class="emg-timeline-content">
+                <div class="emg-timeline-title">System Online</div>
+                <div class="emg-timeline-desc">AI monitoring and emergency response active</div>
+                <div class="emg-timeline-time">Just now</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <a href="tel:112" class="emg-emergency-call">
+          <div class="emg-emergency-call-icon"><i class="fas fa-phone"></i></div>
+          <div class="emg-emergency-call-text">
+            <strong>Call Emergency Services</strong>
+            <span>112 · 108 · Police · Ambulance · Fire</span>
+          </div>
+          <i class="fas fa-chevron-right emg-emergency-call-arrow"></i>
+        </a>
+
+        <div class="emg-ai-msg">
+          <i class="fas fa-robot emg-ai-msg-icon"></i>
+          <div class="emg-ai-msg-text">
+            <strong>AI Emergency Assistant Online</strong><br>
+            I'm monitoring your safety. In case of an accident, I will automatically detect it and alert emergency services. You can also manually trigger SOS at any time. Stay safe.
+          </div>
+        </div>
+      </div>
+
+      <div id="emg-panel-hospitals" class="emg-container" style="display:none">
+        <div class="emg-card">
+          <div class="emg-card-head">
+            <i class="fas fa-ambulance"></i>
+            <span class="emg-card-title">Nearby Hospitals & Emergency Services</span>
+          </div>
+          <div class="emg-card-body" id="emg-hospital-list-full">
+            <div class="emg-empty-state"><i class="fas fa-spinner fa-spin"></i><p>Searching for nearby hospitals...</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="emg-panel-contacts" class="emg-container" style="display:none">
+        <div class="emg-card">
+          <div class="emg-card-head">
+            <i class="fas fa-address-book"></i>
+            <span class="emg-card-title">Emergency Contacts</span>
+          </div>
+          <div class="emg-card-body">
+            <div id="emg-contacts-list"></div>
+            <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--bd)">
+              <div class="field">
+                <label class="field-label">Add Emergency Contact</label>
+                <div style="display:flex;gap:8px">
+                  <input class="field-input" id="emg-contact-name" placeholder="Name" style="flex:1;padding:10px 14px">
+                  <input class="field-input" id="emg-contact-phone" placeholder="Phone" type="tel" style="flex:1;padding:10px 14px">
+                  <button class="btn btn-primary btn-sm" onclick="addContact()"><i class="fas fa-plus"></i></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="emg-panel-settings" class="emg-container" style="display:none">
+        <div class="emg-card">
+          <div class="emg-card-head">
+            <i class="fas fa-cog"></i>
+            <span class="emg-card-title">Emergency Settings</span>
+          </div>
+          <div class="emg-card-body emg-settings-section">
+            <div class="emg-notification-opt">
+              <div class="emg-notification-opt-left">
+                <i class="fas fa-exclamation-triangle blue"></i>
+                <div class="emg-notification-opt-info">
+                  <div class="emg-notification-opt-name">Auto Accident Detection</div>
+                  <div class="emg-notification-opt-desc">Automatically detect accidents using device sensors</div>
+                </div>
+              </div>
+              <div class="emg-toggle active" id="emg-auto-detect"></div>
+            </div>
+            <div class="emg-notification-opt">
+              <div class="emg-notification-opt-left">
+                <i class="fas fa-bell green"></i>
+                <div class="emg-notification-opt-info">
+                  <div class="emg-notification-opt-name">Auto Alert Mode</div>
+                  <div class="emg-notification-opt-desc">Automatically alert emergency services on detection</div>
+                </div>
+              </div>
+              <div class="emg-toggle active" id="emg-auto-alert"></div>
+            </div>
+            <div class="emg-notification-opt">
+              <div class="emg-notification-opt-left">
+                <i class="fas fa-mobile-alt amber"></i>
+                <div class="emg-notification-opt-info">
+                  <div class="emg-notification-opt-name">Vibration Feedback</div>
+                  <div class="emg-notification-opt-desc">Vibrate on emergency detection and countdown</div>
+                </div>
+              </div>
+              <div class="emg-toggle active" id="emg-vibration"></div>
+            </div>
+          </div>
+        </div>
+        <div class="emg-card">
+          <div class="emg-card-head">
+            <i class="fas fa-info-circle"></i>
+            <span class="emg-card-title">About Emergency System</span>
+          </div>
+          <div class="emg-card-body">
+            <div class="emg-ai-msg-text">
+              <strong>AccelerateZero Emergency Response v2.0</strong><br><br>
+              This system uses device sensors (accelerometer, gyroscope, GPS) to detect possible accidents and automatically trigger emergency workflows. In offline mode, emergency data is stored locally and synced when connectivity is restored.<br><br>
+              <span style="color:var(--text-faint);font-size:.75rem">All emergency data is encrypted and securely transmitted. Your location is only shared during active emergencies.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/scripts/auth.js"></script>
+  <script src="/scripts/router.js"></script>
+  <script src="/scripts/http.js"></script>
+  <script src="/scripts/ui.js"></script>
+  <script src="/scripts/navigation.js"></script>
+  <script src="/scripts/emergency.js"></script>
+  <script>
+    function showEmergencyPanel(panel) {
+      ['sos','hospitals','contacts','settings'].forEach(p => {
+        const el = document.getElementById('emg-panel-' + p);
+        if (el) el.style.display = 'none';
+      });
+      const active = document.getElementById('emg-panel-' + panel);
+      if (active) active.style.display = 'flex';
+
+      document.querySelectorAll('.emg-nav a').forEach(a => a.classList.remove('active'));
+      const links = document.querySelectorAll('.emg-nav a');
+      const idx = ['sos','hospitals','contacts','settings','exit'].indexOf(panel);
+      if (links[idx]) links[idx].classList.add('active');
+    }
+
+    function triggerManualSOS() {
+      if (window.AccelZeroEmergency) {
+        window.AccelZeroEmergency.triggerEmergency('manual_sos_page');
+      }
+    }
+
+    function addContact() {
+      const name = document.getElementById('emg-contact-name').value.trim();
+      const phone = document.getElementById('emg-contact-phone').value.trim();
+      if (!name || !phone) { showToast('Please enter name and phone', 'error'); return; }
+      if (window.AccelZeroEmergency) {
+        window.AccelZeroEmergency.addEmergencyContact(name, phone);
+        document.getElementById('emg-contact-name').value = '';
+        document.getElementById('emg-contact-phone').value = '';
+        renderContacts();
+        showToast('Contact added', 'success');
+      }
+    }
+
+    function renderContacts() {
+      const list = document.getElementById('emg-contacts-list');
+      if (!list || !window.AccelZeroEmergency) return;
+      const contacts = window.AccelZeroEmergency.state.emergencyContacts;
+      if (!contacts.length) {
+        list.innerHTML = '<div class="emg-empty-state"><i class="fas fa-address-card"></i><p>No emergency contacts added</p></div>';
+        return;
+      }
+      list.innerHTML = contacts.map(c => `
+        <div class="emg-contact-item">
+          <div class="emg-contact-icon blue"><i class="fas fa-user"></i></div>
+          <div class="emg-contact-info">
+            <div class="emg-contact-name">${c.name}</div>
+            <div class="emg-contact-number">${c.phone}</div>
+          </div>
+          <button class="emg-btn-call" onclick="window.open('tel:${c.phone}')" title="Call"><i class="fas fa-phone"></i></button>
+          <button style="width:28px;height:28px;border-radius:6px;background:rgba(255,45,85,.1);color:var(--red);border:none;cursor:pointer;font-size:.75rem" onclick="deleteContact('${c.id}')" title="Remove"><i class="fas fa-trash"></i></button>
+        </div>
+      `).join('');
+    }
+
+    function deleteContact(id) {
+      if (window.AccelZeroEmergency) {
+        window.AccelZeroEmergency.removeEmergencyContact(id);
+        renderContacts();
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const settings = window.AccelZeroEmergency?.state?.settings;
+      if (settings) {
+        ['auto-detect','auto-alert','vibration'].forEach(id => {
+          const el = document.getElementById('emg-' + id);
+          if (el) {
+            el.classList.toggle('active', settings[id.replace('-','')]);
+            el.addEventListener('click', function() {
+              const key = id.replace('-','');
+              settings[key] = !settings[key];
+              this.classList.toggle('active', settings[key]);
+              window.AccelZeroEmergency.saveSettings();
+            });
+          }
+        });
+      }
+      renderContacts();
+      setTimeout(() => {
+        window.AccelZeroEmergency?.findNearbyHospitals();
+      }, 500);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Completing Sign In - AccelerateZero</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="../styles/main.css" />
+  <style>body{background:var(--blk);color:var(--text);font-family:var(--font);min-height:100vh;display:flex;align-items:center;justify-content:center}</style>
+</head>
+<body>
+  <div class="text-center anim-fade">
+    <div class="marker" style="width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#0066ff,#00d4ff);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:1.5rem;color:#fff;box-shadow:0 8px 24px var(--accent-glow)"><i class="fas fa-shield-halved"></i></div>
+    <div class="spin spin-lg" style="margin:0 auto 16px"></div>
+    <h1 style="font-size:1.25rem;font-weight:600;margin-bottom:4px">Completing sign in...</h1>
+    <p class="f6">Please wait while we redirect you</p>
+  </div>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="../scripts/auth.js"></script>
+  <script src="../scripts/router.js"></script>
+  <script src="../scripts/http.js"></script>
+  <script src="../scripts/ui.js"></script>
+  <script src="../scripts/navigation.js"></script>
+  <script>
+    onAuthStateChange(function(state) {
+      if (state.loading) return;
+      if (state.user) {
+        __routes.safeRedirect(__routes.getRouteByName('dashboard'));
+      } else {
+        __routes.safeRedirect(__routes.getRouteByName('login'));
+      }
+    });
+  </script>
+</body>
+</html>

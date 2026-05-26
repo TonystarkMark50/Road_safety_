@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Traffic Analytics — AccelerateZero</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="stylesheet" href="../styles/main.css" />
+  <style>
+    .ta-card { padding: 20px; background: var(--blk-surface); border: 1px solid var(--bd); border-radius: 14px; position: relative; overflow: hidden }
+    .ta-stat { text-align:center; padding:16px }
+    .ta-stat .val { font-size:1.75rem; font-weight:700; font-family:var(--mono); line-height:1.1 }
+    .ta-stat .lbl { font-size:.6875rem; color:var(--text-dim); margin-top:4px }
+    .ta-row { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--bd) }
+    .ta-row:last-child { border-bottom:none }
+    .ta-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0 }
+    .ta-bar { flex:1; height:6px; border-radius:3px; background:rgba(255,255,255,.05); overflow:hidden }
+    .ta-bar-fill { height:100%; border-radius:3px }
+  </style>
+</head>
+<body>
+  <div id="particles-canvas"></div>
+
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <a href="/" class="sidebar-brand">
+        <img src="../images/logo.png" alt="" class="sidebar-brand-img" loading="lazy" />
+        <span class="sidebar-brand-name">AccelerateZero</span>
+      </a>
+      <button class="sidebar-close" id="sidebar-close" onclick="document.body.classList.remove('nav-open')" aria-label="Close navigation">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-label">Operations</div>
+      <a href="dashboard.html" class="sidebar-link"><i class="fas fa-chart-bar"></i><span>Dashboard</span></a>
+      <a href="map.html" class="sidebar-link"><i class="fas fa-map"></i><span>Live Map</span></a>
+      <a href="report.html" class="sidebar-link"><i class="fas fa-plus-circle"></i><span>Report Hazard</span></a>
+      <a href="track.html" class="sidebar-link"><i class="fas fa-search"></i><span>Track Reports</span></a>
+
+      <div class="sidebar-label">Emergency</div>
+      <a href="emergency.html" class="sidebar-link" style="background:rgba(255,45,85,.08);border:1px solid rgba(255,45,85,.15);margin:2px 0;border-radius:8px"><i class="fas fa-exclamation-triangle" style="color:var(--red)"></i><span style="color:var(--red);font-weight:700">SOS Emergency</span><span class="badge-dot" style="background:var(--red);animation:ping 1s infinite"></span></a>
+
+      <div class="sidebar-label">Intelligence</div>
+      <a href="ai-insights.html" class="sidebar-link"><i class="fas fa-brain"></i><span>AI Insights</span></a>
+      <a href="traffic-analytics.html" class="sidebar-link active"><i class="fas fa-chart-line"></i><span>Traffic Analytics</span></a>
+      <a href="heatmaps.html" class="sidebar-link"><i class="fas fa-fire"></i><span>Heatmaps</span><span class="badge-dot"></span></a>
+
+      <div class="sidebar-label" id="gov-sidebar-label" style="display:none">Government</div>
+      <a href="budget-infrastructure.html" class="sidebar-link gov-sidebar-link" style="display:none"><i class="fas fa-coins"></i><span>Budget & Infrastructure</span></a>
+      <a href="contractors.html" class="sidebar-link gov-sidebar-link" style="display:none"><i class="fas fa-user-tie"></i><span>Contractors & Tenders</span></a>
+      <a href="authority-data.html" class="sidebar-link gov-sidebar-link" style="display:none"><i class="fas fa-building"></i><span>Authority Data</span></a>
+
+      <div class="sidebar-label" id="admin-section-label" style="display:none">Administration</div>
+      <a href="admin-panel.html" id="admin-sidebar-link" class="sidebar-link" style="display:none"><i class="fas fa-shield-halved"></i><span>Admin Panel</span></a>
+
+      <div class="sidebar-label">Account</div>
+      <a href="profile.html" class="sidebar-link"><i class="fas fa-user"></i><span>Profile</span></a>
+      <a href="my-reports.html" class="sidebar-link"><i class="fas fa-file-alt"></i><span>My Reports</span></a>
+      <a href="settings.html" class="sidebar-link"><i class="fas fa-cog"></i><span>Settings</span></a>
+    </nav>
+    <div class="sidebar-foot">
+      <button class="sidebar-link" id="logout-btn">
+        <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Sidebar Overlay -->
+  <div class="nav-overlay" id="nav-overlay" onclick="document.body.classList.remove('nav-open')"></div>
+
+  <!-- Top Bar -->
+  <div class="topbar" id="topbar">
+    <div class="topbar-left">
+      <button class="nav-toggle" id="nav-toggle" onclick="event.stopPropagation();document.body.classList.toggle('nav-open')" aria-label="Toggle navigation">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="2" rx="2" fill="currentColor"></rect><rect y="11" width="24" height="2" rx="2" fill="currentColor"></rect><rect y="22" width="24" height="2" rx="2" fill="currentColor"></rect></svg>
+      </button>
+      <span class="topbar-title">Traffic <span class="highlight">Analytics</span></span>
+      <span class="topbar-meta"><span class="pulse"></span> Real-time Data</span>
+    </div>
+    <div class="topbar-right">
+      <div id="notif-toggle" style="position:relative;cursor:pointer;width:32px;height:32px;display:none;align-items:center;justify-content:center;border-radius:8px;transition:background 0.2s var(--ease)" onclick="Notifications.toggle()" title="Notifications">
+        <i class="fas fa-bell" style="font-size:0.8125rem;color:var(--text-dim)"></i>
+        <span id="notif-badge" style="display:none;position:absolute;top:-2px;right:-2px;width:16px;height:16px;border-radius:50%;background:var(--red);color:#fff;font-size:0.5625rem;font-weight:700;align-items:center;justify-content:center;border:2px solid var(--blk)">0</span>
+      </div>
+      <div id="user-menu-container" style="display:none" class="relative">
+        <div id="user-menu-btn" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 8px;border-radius:8px;transition:background 0.2s var(--ease)">
+          <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#4f46e5,#6366f1);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.6875rem"><i class="fas fa-user"></i></div>
+          <span id="user-name-display" style="font-size:0.8125rem;font-weight:500"></span>
+        </div>
+        <div id="user-dropdown" style="position:absolute;top:calc(100% + 8px);right:0;min-width:180px;background:var(--blk-elevated);border:1px solid var(--bd);border-radius:12px;padding:8px;display:none;z-index:200">
+          <a href="profile.html" style="display:block;padding:8px 12px;border-radius:8px;font-size:0.8125rem;color:var(--text-dim)"><i class="fas fa-user" style="width:16px;margin-right:8px"></i>Profile</a>
+          <a href="my-reports.html" style="display:block;padding:8px 12px;border-radius:8px;font-size:0.8125rem;color:var(--text-dim)"><i class="fas fa-file-alt" style="width:16px;margin-right:8px"></i>My Reports</a>
+          <div style="height:1px;background:var(--bd);margin:4px 8px"></div>
+          <button id="logout-btn-top" style="display:block;width:100%;text-align:left;padding:8px 12px;border-radius:8px;font-size:0.8125rem;color:var(--red);background:none;border:none;cursor:pointer"><i class="fas fa-sign-out-alt" style="width:16px;margin-right:8px"></i>Logout</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="page-main scene-3d">
+    <div style="max-width:1200px;margin:0 auto;padding:24px">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px">
+        <div class="panel-3d ta-card ta-stat">
+          <div class="holo-overlay"></div>
+          <div class="val gradient">12.4k</div>
+          <div class="lbl">Vehicles / hr</div>
+        </div>
+        <div class="panel-3d ta-card ta-stat">
+          <div class="holo-overlay"></div>
+          <div class="val" style="color:var(--green)">74</div>
+          <div class="lbl">Avg Speed (km/h)</div>
+        </div>
+        <div class="panel-3d ta-card ta-stat">
+          <div class="holo-overlay"></div>
+          <div class="val" style="color:var(--amber)">8.2%</div>
+          <div class="lbl">Congestion Index</div>
+        </div>
+        <div class="panel-3d ta-card ta-stat">
+          <div class="holo-overlay"></div>
+          <div class="val" style="color:var(--red)">6</div>
+          <div class="lbl">Active Incidents</div>
+        </div>
+      </div>
+
+      <!-- Traffic flow visualization -->
+      <div class="flow-vis" style="margin-bottom:20px;height:80px;background:var(--blk-surface);border:1px solid var(--bd);border-radius:12px">
+        <svg viewBox="0 0 800 80" preserveAspectRatio="none" style="width:100%;height:100%">
+          <defs>
+            <linearGradient id="flowGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="rgba(0,102,255,0.3)"/>
+              <stop offset="30%" stop-color="rgba(0,212,255,0.2)"/>
+              <stop offset="60%" stop-color="rgba(255,184,0,0.25)"/>
+              <stop offset="100%" stop-color="rgba(255,45,85,0.3)"/>
+            </linearGradient>
+          </defs>
+          <rect x="0" y="35" width="800" height="10" rx="5" fill="rgba(255,255,255,0.03)"/>
+          <rect x="0" y="35" width="200" height="10" rx="5" fill="rgba(0,230,118,0.2)"/>
+          <rect x="200" y="35" width="240" height="10" rx="5" fill="rgba(0,102,255,0.2)"/>
+          <rect x="440" y="35" width="180" height="10" rx="5" fill="rgba(255,184,0,0.2)"/>
+          <rect x="620" y="35" width="180" height="10" rx="5" fill="rgba(255,45,85,0.2)"/>
+          <circle r="4" fill="#00e676" opacity="0.8">
+            <animateMotion dur="6s" repeatCount="indefinite" path="M -20 40 L 820 40"/>
+          </circle>
+          <circle r="3" fill="#0066ff" opacity="0.6">
+            <animateMotion dur="8s" repeatCount="indefinite" path="M -20 40 L 820 40"/>
+          </circle>
+          <circle r="2.5" fill="#ffb800" opacity="0.5">
+            <animateMotion dur="10s" repeatCount="indefinite" path="M -20 40 L 820 40"/>
+          </circle>
+          <text x="100" y="25" text-anchor="middle" fill="rgba(0,230,118,0.6)" font-size="8" font-family="monospace">CLEAR</text>
+          <text x="320" y="25" text-anchor="middle" fill="rgba(0,102,255,0.6)" font-size="8" font-family="monospace">MODERATE</text>
+          <text x="530" y="25" text-anchor="middle" fill="rgba(255,184,0,0.6)" font-size="8" font-family="monospace">HEAVY</text>
+          <text x="710" y="25" text-anchor="middle" fill="rgba(255,45,85,0.6)" font-size="8" font-family="monospace">JAM</text>
+        </svg>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="panel-3d ta-card">
+          <div class="holo-overlay"></div>
+          <div style="font-size:.75rem;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">Corridor Congestion</div>
+          <div class="ta-row">
+            <div class="ta-dot" style="background:var(--red)"></div>
+            <div style="flex:1;font-size:.8125rem">NH-48 Express</div>
+            <div style="font-size:.6875rem;color:var(--text-dim);width:60px;text-align:right">92%</div>
+            <div class="ta-bar"><div class="ta-bar-fill" style="width:92%;background:var(--red)"></div></div>
+          </div>
+          <div class="ta-row">
+            <div class="ta-dot" style="background:var(--amber)"></div>
+            <div style="flex:1;font-size:.8125rem">Ring Road East</div>
+            <div style="font-size:.6875rem;color:var(--text-dim);width:60px;text-align:right">76%</div>
+            <div class="ta-bar"><div class="ta-bar-fill" style="width:76%;background:var(--amber)"></div></div>
+          </div>
+          <div class="ta-row">
+            <div class="ta-dot" style="background:var(--amber)"></div>
+            <div style="flex:1;font-size:.8125rem">MG Road Corridor</div>
+            <div style="font-size:.6875rem;color:var(--text-dim);width:60px;text-align:right">68%</div>
+            <div class="ta-bar"><div class="ta-bar-fill" style="width:68%;background:var(--amber)"></div></div>
+          </div>
+          <div class="ta-row">
+            <div class="ta-dot" style="background:var(--green)"></div>
+            <div style="flex:1;font-size:.8125rem">Western Bypass</div>
+            <div style="font-size:.6875rem;color:var(--text-dim);width:60px;text-align:right">34%</div>
+            <div class="ta-bar"><div class="ta-bar-fill" style="width:34%;background:var(--green)"></div></div>
+          </div>
+          <div class="ta-row">
+            <div class="ta-dot" style="background:var(--green)"></div>
+            <div style="flex:1;font-size:.8125rem">Coastal Road</div>
+            <div style="font-size:.6875rem;color:var(--text-dim);width:60px;text-align:right">22%</div>
+            <div class="ta-bar"><div class="ta-bar-fill" style="width:22%;background:var(--green)"></div></div>
+          </div>
+        </div>
+        <div class="panel-3d ta-card">
+          <div class="holo-overlay"></div>
+          <div style="font-size:.75rem;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">Peak Hour Distribution</div>
+          <div class="ta-row">
+            <div style="flex:1;font-size:.8125rem">07:00 – 09:00</div>
+            <div style="font-size:.6875rem;color:var(--text-dim);width:60px;text-align:right">14.2k</div>
+            <div class="ta-bar"><div class="ta-bar-fill" style="width:100%;background:var(--accent)"></div></div>
+          </div>
+          <div class="ta-row">
+            <div style="flex:1;font-size:.8125rem">09:00 – 12:00</div>
+            <div style="font-size:.6875rem;color:var(--text-dim);width:60px;text-align:right">8.7k</div>
+            <div class="ta-bar"><div class="ta-bar-fill" style="width:61%;background:var(--accent)"></div></div>
+          </div>
+          <div class="ta-row">
+            <div style="flex:1;font-size:.8125rem">12:00 – 17:00</div>
+            <div style="font-size:.6875rem;color:var(--text-dim);width:60px;text-align:right">9.1k</div>
+            <div class="ta-bar"><div class="ta-bar-fill" style="width:64%;background:var(--accent)"></div></div>
+          </div>
+          <div class="ta-row">
+            <div style="flex:1;font-size:.8125rem">17:00 – 20:00</div>
+            <div style="font-size:.6875rem;color:var(--text-dim);width:60px;text-align:right">13.8k</div>
+            <div class="ta-bar"><div class="ta-bar-fill" style="width:97%;background:var(--accent)"></div></div>
+          </div>
+          <div class="ta-row">
+            <div style="flex:1;font-size:.8125rem">20:00 – 07:00</div>
+            <div style="font-size:.6875rem;color:var(--text-dim);width:60px;text-align:right">3.2k</div>
+            <div class="ta-bar"><div class="ta-bar-fill" style="width:23%;background:var(--accent)"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottombar" id="mobile-nav">
+    <div class="bottombar-inner">
+      <a href="dashboard.html"><i class="fas fa-chart-bar"></i><span>Dashboard</span></a>
+      <a href="map.html"><i class="fas fa-map"></i><span>Map</span></a>
+      <a href="report.html"><i class="fas fa-plus-circle"></i><span>Report</span></a>
+      <a href="track.html"><i class="fas fa-search"></i><span>Track</span></a>
+
+      <a href="emergency.html"><i class="fas fa-exclamation-triangle" style="color:var(--red)"></i><span style="color:var(--red)">SOS</span></a>
+
+      <a href="profile.html"><i class="fas fa-user"></i><span>Profile</span></a>
+    </div>
+  </nav>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="../scripts/auth.js">
+  <script src="../scripts/router.js"></script>
+  <script src="../scripts/http.js"></script>
+  <script src="../scripts/ui.js"></script>
+  <script src="../scripts/navigation.js"></script>
+  <script src="../scripts/realtime.js"></script>
+  <script src="../scripts/notifications.js"></script>
+  <script src="../scripts/app.js"></script>
+  <script src="../scripts/emergency.js"></script>
+  <script src="../scripts/chatbot.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof initNotifications === 'function' && getAccessTokenSync()) {
+        initNotifications();
+        document.getElementById('notif-toggle').style.display = 'flex';
+      }
+      if (typeof initRealtime === 'function' && getAccessTokenSync()) {
+        initRealtime();
+      }
+      const topLogout = document.getElementById('logout-btn-top');
+      if (topLogout) {
+        topLogout.addEventListener('click', async () => {
+          await logoutUser();
+          window.location.href = '/';
+        });
+      }
+    });
+  </script>
+</body>
+</html>

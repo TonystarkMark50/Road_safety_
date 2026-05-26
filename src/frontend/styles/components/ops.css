@@ -1,0 +1,90 @@
+/* Operational command center layouts */
+.ops-command-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.9fr);
+  gap: calc(var(--az-grid-unit) * 2);
+  align-items: start;
+}
+.ops-feed-primary {
+  min-height: 320px;
+}
+.ops-rail {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--az-grid-unit) * 2);
+  position: sticky;
+  top: calc(var(--topbar-h) + 16px);
+}
+.ops-pulse-ring {
+  position: relative;
+}
+.ops-pulse-ring::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  border: 1px solid rgba(0, 102, 255, 0.35);
+  animation: opsPulse 2s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes opsPulse {
+  0% { opacity: 0.8; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.08); }
+}
+.ops-skeleton {
+  background: linear-gradient(90deg, var(--blk-elevated) 25%, var(--blk-hover) 50%, var(--blk-elevated) 75%);
+  background-size: 200% 100%;
+  animation: opsShimmer 1.2s ease-in-out infinite;
+  border-radius: var(--radius-md);
+  min-height: 72px;
+}
+@keyframes opsShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.feed-live-pulse .topbar-meta .pulse {
+  box-shadow: 0 0 12px var(--green);
+}
+.admin-mobile-bar {
+  display: none;
+}
+@media (max-width: 900px) {
+  .ops-command-grid {
+    grid-template-columns: 1fr;
+  }
+  .ops-rail {
+    position: static;
+  }
+  .admin-mobile-bar {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: rgba(10, 14, 26, 0.95);
+    border-top: 1px solid var(--bd);
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+    gap: 8px;
+    justify-content: space-around;
+  }
+  .admin-mobile-bar a {
+    flex: 1;
+    text-align: center;
+    padding: 10px 4px;
+    font-size: 0.625rem;
+    color: var(--text-dim);
+    text-decoration: none;
+    border-radius: 8px;
+    min-height: var(--az-touch-min);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+  .admin-mobile-bar a.active {
+    color: var(--accent);
+    background: rgba(0, 102, 255, 0.08);
+  }
+}

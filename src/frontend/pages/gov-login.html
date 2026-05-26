@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Government Portal — AccelerateZero</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="stylesheet" href="../styles/main.css" />
+  <style>
+    body { background:#06070e }
+    .gov-bg { position:fixed;inset:0;background:radial-gradient(ellipse 50% 35% at 50% 30%,rgba(245,158,11,0.04) 0%,transparent 70%);pointer-events:none;z-index:0 }
+    .gov-container { min-height:100vh;display:flex;align-items:center;justify-content:center;padding:80px 20px;position:relative;z-index:1 }
+    .gov-box { width:100%;max-width:440px }
+    .gov-header { text-align:center;margin-bottom:28px }
+    .gov-emblem { width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#92400e,#d97706);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:#fff;font-size:1.5rem;box-shadow:0 8px 28px rgba(217,119,6,.15) }
+    .gov-header h1 { font-size:1.25rem;font-weight:700;letter-spacing:-.02em }
+    .gov-header p { color:var(--text-dim);font-size:.8125rem;margin-top:4px }
+    .gov-badge { display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:100px;background:rgba(217,119,6,.1);color:#d97706;font-size:.625rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;border:1px solid rgba(217,119,6,.15) }
+    .gov-card { padding:32px;background:rgba(10,12,22,.92);backdrop-filter:blur(20px);border:1px solid rgba(217,119,6,.12);border-radius:20px;box-shadow:0 24px 80px rgba(0,0,0,.5),0 0 30px rgba(217,119,6,.03);position:relative;overflow:hidden }
+    .gov-card::before { content:'';position:absolute;top:0;left:-100%;width:200%;height:1px;background:linear-gradient(90deg,transparent,rgba(217,119,6,.2),transparent);animation:shimmer-sweep 4s ease-in-out infinite }
+    .gov-field { margin-bottom:14px }
+    .gov-field label { display:block;font-size:.6875rem;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px }
+    .gov-field .input-wrap { position:relative;display:flex;align-items:center }
+    .gov-field .input-wrap i { position:absolute;left:12px;font-size:.75rem;color:var(--text-faint) }
+    .gov-field input { width:100%;padding:10px 12px 10px 34px;border-radius:10px;border:1px solid var(--bd);background:var(--blk-elevated);color:var(--text);font-size:.8125rem;font-family:inherit;outline:none;transition:all .25s var(--ease) }
+    .gov-field input:focus { border-color:#d97706;box-shadow:0 0 0 3px rgba(217,119,6,.08),0 4px 12px rgba(217,119,6,.05) }
+    .gov-field input::placeholder { color:var(--text-faint) }
+    .gov-btn { width:100%;padding:11px;border-radius:10px;border:none;font-size:.8125rem;font-weight:600;cursor:pointer;transition:all .25s var(--ease);font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px }
+    .gov-btn-primary { background:linear-gradient(135deg,#92400e,#d97706);color:#fff }
+    .gov-btn-primary:hover { transform:translateY(-1px);box-shadow:0 8px 20px rgba(217,119,6,.2) }
+    .gov-btn-primary:disabled { opacity:.5;cursor:not-allowed;transform:none }
+    .gov-btn-outline { background:transparent;border:1px solid rgba(217,119,6,.2);color:#d97706 }
+    .gov-btn-outline:hover { background:rgba(217,119,6,.05) }
+    .gov-divider { display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--text-faint);font-size:.6875rem }
+    .gov-divider::before,.gov-divider::after { content:'';flex:1;height:1px;background:var(--bd) }
+    .gov-footer { text-align:center;margin-top:20px;font-size:.75rem;color:var(--text-dim) }
+    .gov-footer a { color:#d97706;font-weight:500;text-decoration:none }
+    .gov-footer a:hover { text-decoration:underline }
+    .gov-note { display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:rgba(217,119,6,.05);border:1px solid rgba(217,119,6,.1);font-size:.6875rem;color:var(--text-dim);margin-top:16px }
+    .gov-mfa-section { display:none;margin-top:12px;padding-top:16px;border-top:1px solid var(--bd) }
+    .gov-mfa-section .gov-field { margin-bottom:0 }
+    .spinner { width:16px;height:16px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block }
+    @keyframes spin { to { transform:rotate(360deg) } }
+    @keyframes shimmer-sweep { 0%,100% { transform:translateX(-100%) } 50% { transform:translateX(100%) } }
+    .gov-secure-badge { position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:6px;font-size:.625rem;color:var(--text-faint);background:rgba(10,12,22,.8);padding:6px 14px;border-radius:100px;border:1px solid var(--bd);z-index:2 }
+    .gov-secure-badge i { color:var(--green);font-size:.5rem }
+    .gov-toast { position:fixed;top:24px;right:24px;z-index:10000;display:flex;flex-direction:column;gap:8px;pointer-events:none }
+    .gov-toast-item { padding:10px 16px;border-radius:10px;background:var(--blk-elevated);border:1px solid var(--bd);font-size:.75rem;color:var(--text);box-shadow:0 4px 20px rgba(0,0,0,.3);animation:slideIn .25s var(--ease-out);pointer-events:auto;max-width:320px }
+    @keyframes slideIn { from { opacity:0;transform:translateX(20px) } to { opacity:1;transform:translateX(0) } }
+    @media(max-width:480px) { .gov-card { padding:24px 20px } }
+  </style>
+</head>
+<body>
+  <canvas id="three-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0"></canvas>
+  <div id="particles-canvas"></div>
+  
+  <div class="gov-bg"></div>
+  <div class="gov-container">
+    <div class="gov-box">
+      <div class="gov-header">
+        <div class="gov-emblem"><i class="fas fa-building-columns"></i></div>
+        <div class="gov-badge"><i class="fas fa-shield-halved"></i> Government Portal</div>
+        <h1>Authorized Access Only</h1>
+        <p>Sign in with your official government credentials</p>
+      </div>
+      <div class="gov-card">
+        <form id="gov-login-form">
+          <div class="gov-field">
+            <label>Official Email</label>
+            <div class="input-wrap">
+              <i class="fas fa-envelope"></i>
+              <input type="email" id="gov-email" placeholder="you@gov.in" required autocomplete="email" />
+            </div>
+          </div>
+          <div class="gov-field">
+            <label>Password</label>
+            <div class="input-wrap">
+              <i class="fas fa-lock"></i>
+              <input type="password" id="gov-password" placeholder="Enter your password" required autocomplete="current-password" />
+            </div>
+          </div>
+          <button type="submit" class="gov-btn gov-btn-primary" id="gov-login-btn">
+            <i class="fas fa-shield-halved"></i> Authenticate
+          </button>
+        </form>
+
+        <div class="gov-mfa-section" id="gov-mfa-section">
+          <div class="gov-field">
+            <label>Verification Code</label>
+            <div class="input-wrap">
+              <i class="fas fa-key"></i>
+              <input type="text" id="gov-mfa-code" placeholder="Enter 6-digit code" maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" />
+            </div>
+          </div>
+          <button class="gov-btn gov-btn-primary" id="gov-mfa-btn">Verify & Sign In</button>
+        </div>
+
+        <div class="gov-divider"><span>OR</span></div>
+        <a href="gov-request-access.html" class="gov-btn gov-btn-outline" style="text-decoration:none">
+          <i class="fas fa-file-pen"></i> Request Government Access
+        </a>
+
+        <div class="gov-note">
+          <i class="fas fa-shield-halved" style="color:#d97706;flex-shrink:0"></i>
+          <span>This portal is for authorized government personnel only. All access attempts are monitored and logged.</span>
+        </div>
+      </div>
+      <div class="gov-footer">
+        <a href="login.html"><i class="fas fa-arrow-left"></i> Citizen Login Portal</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="gov-secure-badge"><i class="fas fa-circle"></i> Secured · Government Network · v1.0</div>
+  <div class="gov-toast" id="gov-toast"></div>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="../scripts/auth.js">
+  <script src="../scripts/router.js"></script>
+  <script src="../scripts/http.js"></script>
+  <script src="../scripts/ui.js"></script>
+  <script src="../scripts/navigation.js"></script>
+  <script>
+    function showToast(msg, type='info') {
+      const c = document.getElementById('gov-toast');
+      if (!c) return;
+      const colors = {info:'rgba(217,119,6,.3)',success:'rgba(16,185,129,.3)',error:'rgba(239,68,68,.3)'};
+      const el = document.createElement('div');
+      el.className = 'gov-toast-item';
+      el.style.borderColor = colors[type] || colors.info;
+      el.textContent = msg;
+      c.appendChild(el);
+      setTimeout(() => { el.style.opacity='0'; el.style.transition='opacity .3s'; setTimeout(() => el.remove(),300) }, 4000);
+    }
+
+    function setLoading(btn, loading) {
+      if (loading) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Authenticating...'; }
+      else { btn.disabled = false; btn.innerHTML = '<i class="fas fa-shield-halved"></i> Authenticate'; }
+    }
+
+    let pendingToken = null;
+
+    document.getElementById('gov-login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('gov-email').value.trim();
+      const password = document.getElementById('gov-password').value;
+      const btn = document.getElementById('gov-login-btn');
+      if (!email || !password) { showToast('Please fill in all fields','error'); return; }
+      setLoading(btn, true);
+      try {
+        const supabase = getSupabase();
+        const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw new Error(error.message);
+
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
+        const res = await fetch('/api/v1/auth/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const profile = await res.json();
+        const user = profile.user || profile;
+        const role = user?.role || 'citizen';
+
+        if (role === 'citizen') {
+          await supabase.auth.signOut();
+          setLoading(btn, false);
+          showToast('This portal is for government personnel only','error');
+          return;
+        }
+
+        // Check if MFA required
+        try {
+          const mfaRes = await fetch('/api/v1/mfa/setup', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const mfaData = await mfaRes.json();
+          if (mfaData.has_mfa) {
+            pendingToken = token;
+            document.getElementById('gov-login-form').style.display = 'none';
+            document.getElementById('gov-mfa-section').style.display = 'block';
+            setLoading(btn, false);
+            return;
+          }
+        } catch(e) {}
+
+        showToast('Authentication successful','success');
+        setTimeout(() => { window.location.href = '/pages/dashboard.html'; }, 800);
+      } catch (e) {
+        showToast(e.message,'error');
+        setLoading(btn, false);
+      }
+    });
+
+    document.getElementById('gov-mfa-btn').addEventListener('click', async () => {
+      const code = document.getElementById('gov-mfa-code').value.trim();
+      if (!code || code.length !== 6) { showToast('Enter a valid 6-digit code','error'); return; }
+      const btn = document.getElementById('gov-mfa-btn');
+      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Verifying...';
+      try {
+        const res = await fetch('/api/v1/mfa/setup', {
+          headers: { 'Authorization': `Bearer ${pendingToken}` }
+        });
+        const data = await res.json();
+        if (data.devices && data.devices.length > 0) {
+          const deviceId = data.devices[0].id;
+          const verifyRes = await fetch('/api/v1/mfa/verify', {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json', 'Authorization': `Bearer ${pendingToken}` },
+            body: JSON.stringify({ code, device_id: deviceId }),
+          });
+          if (!verifyRes.ok) {
+            const err = await verifyRes.json();
+            throw new Error(err.detail || 'Invalid code');
+          }
+        }
+        showToast('MFA verified. Redirecting...','success');
+        setTimeout(() => { window.location.href = '/pages/dashboard.html'; }, 800);
+      } catch (e) {
+        showToast(e.message,'error');
+        btn.disabled = false; btn.innerHTML = 'Verify & Sign In';
+      }
+    });
+  </script>
+</body>
+</html>
